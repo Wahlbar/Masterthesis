@@ -480,3 +480,13 @@ def worker(cfg):
     # clean everything
     del model
     logger.info("Training finished")
+
+
+
+
+# trying to push some changes to github! Just this comment to see if the re-setup is working.
+# fdsjaöawoewq
+
+def something():
+    x = 1
+    return
