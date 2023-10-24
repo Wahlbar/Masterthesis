@@ -3,7 +3,7 @@ from torch.nn import functional as f
 import torch
 from vast import tools
 
-
+""" EOS with weighting with 1"""
 class EntropicOpensetLoss:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, unk_weight=1):
@@ -28,6 +28,80 @@ class EntropicOpensetLoss:
         )
         return self.cross_entropy(logits, categorical_targets)
 
+""" EOS with weighting with 0.75"""
+class EntropicOpensetLoss2:
+    """ Taken from vast, modified to accept mini batches without positive examples."""
+    def __init__(self, num_of_classes, unk_weight=0.75):
+        self.class_count = num_of_classes
+        self.eye = tools.device(torch.eye(self.class_count))
+        self.unknowns_multiplier = unk_weight / self.class_count
+        self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
+        self.cross_entropy = torch.nn.CrossEntropyLoss()
+
+    def __call__(self, logits, target):
+        categorical_targets = tools.device(torch.zeros(logits.shape))
+        unk_idx = target < 0
+        kn_idx = ~unk_idx
+        # check if there is known samples in the batch
+        if torch.any(kn_idx):
+            categorical_targets[kn_idx, :] = self.eye[target[kn_idx]]
+
+        categorical_targets[unk_idx, :] = (
+            self.ones.expand(
+                torch.sum(unk_idx).item(), self.class_count
+            )
+        )
+        return self.cross_entropy(logits, categorical_targets)
+
+""" EOS with weighting 0.5"""
+class EntropicOpensetLoss3:
+    """ Taken from vast, modified to accept mini batches without positive examples."""
+    def __init__(self, num_of_classes, unk_weight=0.5):
+        self.class_count = num_of_classes
+        self.eye = tools.device(torch.eye(self.class_count))
+        self.unknowns_multiplier = unk_weight / self.class_count
+        self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
+        self.cross_entropy = torch.nn.CrossEntropyLoss()
+
+    def __call__(self, logits, target):
+        categorical_targets = tools.device(torch.zeros(logits.shape))
+        unk_idx = target < 0
+        kn_idx = ~unk_idx
+        # check if there is known samples in the batch
+        if torch.any(kn_idx):
+            categorical_targets[kn_idx, :] = self.eye[target[kn_idx]]
+
+        categorical_targets[unk_idx, :] = (
+            self.ones.expand(
+                torch.sum(unk_idx).item(), self.class_count
+            )
+        )
+        return self.cross_entropy(logits, categorical_targets)
+
+""" EOS with Softmax with background weighting: w_c = N/(C * N_c)"""
+class EntropicOpensetLoss4:
+    """ Taken from vast, modified to accept mini batches without positive examples."""
+    def __init__(self, num_of_classes, unk_weight):
+        self.class_count = num_of_classes
+        self.eye = tools.device(torch.eye(self.class_count))
+        self.unknowns_multiplier = unk_weight / self.class_count
+        self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
+        self.cross_entropy = torch.nn.CrossEntropyLoss()
+
+    def __call__(self, logits, target):
+        categorical_targets = tools.device(torch.zeros(logits.shape))
+        unk_idx = target < 0
+        kn_idx = ~unk_idx
+        # check if there is known samples in the batch
+        if torch.any(kn_idx):
+            categorical_targets[kn_idx, :] = self.eye[target[kn_idx]]
+
+        categorical_targets[unk_idx, :] = (
+            self.ones.expand(
+                torch.sum(unk_idx).item(), self.class_count
+            )
+        )
+        return self.cross_entropy(logits, categorical_targets)
 
 class AverageMeter(object):
     """ Computes and stores the average and current value. Taken from

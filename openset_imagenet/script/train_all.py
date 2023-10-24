@@ -35,8 +35,8 @@ def get_args():
     parser.add_argument(
       "--loss-functions", "-l",
       nargs = "+",
-      choices = ('entropic', 'softmax', 'garbage'),
-      default = ('entropic', 'softmax', 'garbage'),
+      choices = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'softmax', 'garbage'),
+      default = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'softmax', 'garbage'),
       help = "Select the loss functions that should be evaluated"
       )
     parser.add_argument(

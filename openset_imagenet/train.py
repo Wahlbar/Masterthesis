@@ -16,7 +16,7 @@ from loguru import logger
 from .metrics import confidence, auc_score_binary, auc_score_multiclass
 from .dataset import ImagenetDataset
 from .model import ResNet50
-from .losses import AverageMeter, EarlyStopping, EntropicOpensetLoss
+from .losses import AverageMeter, EarlyStopping, EntropicOpensetLoss, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4
 import tqdm
 
 
@@ -328,16 +328,27 @@ def worker(cfg):
 
     # set loss
     loss = None
-    if cfg.loss.type == "entropic":
+    if cfg.loss.type == "entropic" or cfg.loss.type == "EOS1" or cfg.loss.type == "EOS2" or cfg.loss.type == "EOS3" or cfg.loss.type == "EOS4":
         # number of classes - 1 since we have no label for unknown
         n_classes = train_ds.label_count - 1
     else:
         # number of classes when training with extra garbage class for unknowns, or when unknowns are removed
         n_classes = train_ds.label_count
 
-    if cfg.loss.type == "entropic":
+    if cfg.loss.type == "entropic" or cfg.loss.type == "EOS1":
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetLoss(n_classes, cfg.loss.w)
+    elif cfg.loss.type == "EOS2":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetLoss2(n_classes, cfg.loss.w)
+    elif cfg.loss.type == "EOS3":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetLoss3(n_classes, cfg.loss.w)
+    elif cfg.loss.type == "EOS4":
+        # We select entropic loss using the unknown class weights from the config file
+        # We use balanced class weights
+        class_weights = device(train_ds.calculate_class_weights())
+        loss = EntropicOpensetLoss4(n_classes, cfg.loss.w, class_weights)
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
         loss = torch.nn.CrossEntropyLoss(ignore_index=-1)
@@ -480,13 +491,4 @@ def worker(cfg):
     # clean everything
     del model
     logger.info("Training finished")
-
-
-
-
-# trying to push some changes to github! Just this comment to see if the re-setup is working.
-# fdsjaöawoewq
-
-def something():
-    x = 1
-    return
+    

@@ -21,7 +21,7 @@ workers: 4      # Dataloader number of workers
 patience: 0     # Number of epochs to wait before stopping the training. 0 means no early stopping
 
 loss:
-  type: garbage  # either {entropic, softmax, garbage}
+  type: garbage  # either {entropic, 'EOS1', 'EOS2', 'EOS3', 'EOS4', softmax, garbage}
   # Entropic Parameters
   w: 1.
 
