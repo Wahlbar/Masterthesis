@@ -63,6 +63,7 @@ def get_args():
         type=int,
         default=64,
         help="Select the batch size for the test set batches")
+    #TODO: Find out what the workers are for!
     parser.add_argument(
         "--workers",
         type=int,
@@ -127,6 +128,7 @@ def main():
     print(f"Taking model from epoch {start_epoch} that achieved best score {best_score}")
     device(model)
 
+    # TODO: Read over the evaluating again.
     print("========== Evaluating ==========")
     print("Validation data:")
     # extracting arrays for validation

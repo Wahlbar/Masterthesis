@@ -340,15 +340,16 @@ def worker(cfg):
         loss = EntropicOpensetLoss(n_classes, cfg.loss.w)
     elif cfg.loss.type == "EOS2":
         # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLoss2(n_classes, cfg.loss.w)
+        loss = EntropicOpensetLoss2(n_classes)
     elif cfg.loss.type == "EOS3":
         # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLoss3(n_classes, cfg.loss.w)
+        loss = EntropicOpensetLoss3(n_classes)
     elif cfg.loss.type == "EOS4":
         # We select entropic loss using the unknown class weights from the config file
-        # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
-        loss = EntropicOpensetLoss4(n_classes, cfg.loss.w, class_weights)
+        #loss = EntropicOpensetLoss4(n_classes, class_weights)
+        print("class_weights :", class_weights, "\n")
+        loss = EntropicOpensetLoss4(n_classes)
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
         loss = torch.nn.CrossEntropyLoss(ignore_index=-1)
@@ -363,7 +364,7 @@ def worker(cfg):
                      logit_bias=False)
     device(model)
 
-    # Create optimizer
+    # Create optimizer, sgd = stochastic gradient descent12
     if cfg.opt.type == "sgd":
         opt = torch.optim.SGD(params=model.parameters(), lr=cfg.opt.lr, momentum=0.9)
     else:

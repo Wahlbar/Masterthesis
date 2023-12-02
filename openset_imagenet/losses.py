@@ -12,6 +12,7 @@ class EntropicOpensetLoss:
         self.unknowns_multiplier = unk_weight / self.class_count
         self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
         self.cross_entropy = torch.nn.CrossEntropyLoss()
+        print("unk_weight = ", unk_weight, "\n")
 
     def __call__(self, logits, target):
         categorical_targets = tools.device(torch.zeros(logits.shape))
@@ -37,6 +38,7 @@ class EntropicOpensetLoss2:
         self.unknowns_multiplier = unk_weight / self.class_count
         self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
         self.cross_entropy = torch.nn.CrossEntropyLoss()
+        print("unk_weight = ", unk_weight, "\n")
 
     def __call__(self, logits, target):
         categorical_targets = tools.device(torch.zeros(logits.shape))
@@ -62,7 +64,8 @@ class EntropicOpensetLoss3:
         self.unknowns_multiplier = unk_weight / self.class_count
         self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
         self.cross_entropy = torch.nn.CrossEntropyLoss()
-
+        print("unk_weight = ", unk_weight, "\n")
+        
     def __call__(self, logits, target):
         categorical_targets = tools.device(torch.zeros(logits.shape))
         unk_idx = target < 0
@@ -84,9 +87,15 @@ class EntropicOpensetLoss4:
     def __init__(self, num_of_classes, unk_weight):
         self.class_count = num_of_classes
         self.eye = tools.device(torch.eye(self.class_count))
-        self.unknowns_multiplier = unk_weight / self.class_count
+        self.unknowns_multiplier = unk_weight
         self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
-        self.cross_entropy = torch.nn.CrossEntropyLoss()
+        self.crossu_entropy = torch.nn.CrossEntropyLoss()
+        print("unk_weight = ", unk_weight, "\n")
+        print("class_count = ", self.class_count, "\n")
+        print("unknowns_multiplier = ", self.unknowns_multiplier, "\n")
+        print("ones = ", self.ones, "\n")
+        print("cross_entropy = ", self.cross_entropy, "\n")
+        
 
     def __call__(self, logits, target):
         categorical_targets = tools.device(torch.zeros(logits.shape))

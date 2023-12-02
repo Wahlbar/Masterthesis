@@ -44,8 +44,8 @@ def get_args():
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "EOS"),
-        default = ("S", "BG", "EOS"),
+        choices = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4"),
+        default = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4"),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -53,16 +53,21 @@ def get_args():
         action = "store_true",
         help = "If selected, the best model is selected from the validation set. Otherwise, the last model is used"
     )
+    # TODO: What should be the usage of this?
     parser.add_argument(
         "--force", "-f",
         action = "store_true",
         help = "If set, score files will be recomputed even if they already exist"
     )
+
+    # Probably not needed
     parser.add_argument(
       "--linear",
       action="store_true",
       help = "If set, OSCR curves will be plot with linear FPR axis"
     )
+
+    # Eventually if I run multiple Protocols
     parser.add_argument(
       "--sort-by-loss", "-s",
       action = "store_true",
@@ -98,6 +103,7 @@ def get_args():
       "--plots",
       help = "Select where to write the plots into"
     )
+    # TODO: Eventually look over the confidences
     parser.add_argument(
       "--table",
       help = "Select the file where to write the Confidences (gamma) and CCR into"
@@ -147,7 +153,7 @@ def load_scores(args):
 
     return scores, epoch
 
-
+# TODO: OSCR
 def plot_OSCR(args, scores):
     # plot OSCR
     P = len(args.protocols)
@@ -189,7 +195,7 @@ def plot_OSCR(args, scores):
     fig.text(0.5, 0.03, 'FPR', ha='center', fontsize=font)
     fig.text(0.08, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
 
-
+# TODO: Confindence propagation plot
 def plot_confidences(args):
 
   # locate event paths
@@ -273,7 +279,7 @@ def plot_confidences(args):
   fig.text(0.5, 0.05, 'Epoch', ha='center', fontsize=font_size)
 
 
-
+# TODO: Softmax histogramms
 def plot_softmax(args, scores):
 
     font_size = 15
@@ -398,10 +404,12 @@ def main():
   pdf = PdfPages(args.plots)
   try:
     # plot OSCR (actually not required for best case)
+    # TODO: Why does it try to plot OSCR first?
     print("Plotting OSCR curves")
     plot_OSCR(args, scores)
     pdf.savefig(bbox_inches='tight', pad_inches = 0)
 
+    # TODO: Give no argument for the confidence propagation plot
     if not args.linear and not args.use_best and not args.sort_by_loss:
       # plot confidences
       print("Plotting confidence plots")
