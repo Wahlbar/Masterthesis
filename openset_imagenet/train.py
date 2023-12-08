@@ -16,7 +16,7 @@ from loguru import logger
 from .metrics import confidence, auc_score_binary, auc_score_multiclass
 from .dataset import ImagenetDataset
 from .model import ResNet50
-from .losses import AverageMeter, EarlyStopping, EntropicOpensetLoss, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4
+from .losses import AverageMeter, EarlyStopping, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetLoss5, EntropicOpensetLossFCL1, EntropicOpensetLossFCL2, EntropicOpensetLossFCL3
 import tqdm
 
 
@@ -322,34 +322,69 @@ def worker(cfg):
     if cfg.patience > 0:
         early_stopping = EarlyStopping(patience=cfg.patience)
 
-    # Set dictionaries to keep track of the losses
+    # Set dictionaries to keep track of the lossesEOS2
     t_metrics = defaultdict(AverageMeter)
     v_metrics = defaultdict(AverageMeter)
 
     # set loss
     loss = None
-    if cfg.loss.type == "entropic" or cfg.loss.type == "EOS1" or cfg.loss.type == "EOS2" or cfg.loss.type == "EOS3" or cfg.loss.type == "EOS4":
-        # number of classes - 1 since we have no label for unknown
-        n_classes = train_ds.label_count - 1
-    else:
+
+    if cfg.loss.type == "softmax" or cfg.loss.type == "garbage":
         # number of classes when training with extra garbage class for unknowns, or when unknowns are removed
         n_classes = train_ds.label_count
+    
+    else:
+        # number of classes - 1 since we have no label for unknown
+        n_classes = train_ds.label_count - 1
 
-    if cfg.loss.type == "entropic" or cfg.loss.type == "EOS1":
+    # set weight
+    if cfg.loss.type == "entropic":
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetLoss(n_classes, cfg.loss.w)
+
+    elif cfg.loss.type == "EOS1":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetLoss1(n_classes)
+    
     elif cfg.loss.type == "EOS2":
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetLoss2(n_classes)
+    
     elif cfg.loss.type == "EOS3":
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetLoss3(n_classes)
+
     elif cfg.loss.type == "EOS4":
         # We select entropic loss using the unknown class weights from the config file
+        # weights = device(train_ds.calculate_known_and_negative_weights())
         class_weights = device(train_ds.calculate_class_weights())
-        #loss = EntropicOpensetLoss4(n_classes, class_weights)
-        print("class_weights :", class_weights, "\n")
-        loss = EntropicOpensetLoss4(n_classes)
+        known_weights = class_weights[1:]
+        unknown_weight = class_weights[0]
+        # print(class_weights, len(class_weights))
+        # print(known_weights, len(known_weights))
+        loss = EntropicOpensetLoss4(n_classes, kn_w=known_weights, ukn_w=unknown_weight, unk_weight=1)
+    
+    elif cfg.loss.type == "EOS5":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetLoss5(n_classes)
+
+    elif cfg.loss.type == "EOSFCL1":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetLossFCL1(n_classes, gamma=1, alpha=1)
+    
+    elif cfg.loss.type == "EOSFCL2":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetLossFCL2(n_classes, gamma=1, alpha=1)
+
+    elif cfg.loss.type == "EOSFCL3":
+        # We select entropic loss using the unknown class weights from the config file
+        class_weights = device(train_ds.calculate_class_weights())
+        known_weights = class_weights[1:]
+        unknown_weight = class_weights[0]
+        # print(class_weights, len(class_weights))
+        # print(known_weights, len(known_weights))
+        loss = EntropicOpensetLossFCL3(n_classes, gamma=1, alpha=1, kn_w=known_weights, ukn_w=unknown_weight)
+
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
         loss = torch.nn.CrossEntropyLoss(ignore_index=-1)
@@ -364,7 +399,7 @@ def worker(cfg):
                      logit_bias=False)
     device(model)
 
-    # Create optimizer, sgd = stochastic gradient descent12
+    # Create optimizer, sgd = stochastic gradient descent 
     if cfg.opt.type == "sgd":
         opt = torch.optim.SGD(params=model.parameters(), lr=cfg.opt.lr, momentum=0.9)
     else:
@@ -413,7 +448,7 @@ def worker(cfg):
     logger.info(f"Batch size: {cfg.batch_size}")
     logger.info(f"workers: {cfg.workers}")
     logger.info(f"Loss: {cfg.loss.type}")
-    logger.info(f"optimizer: {cfg.opt.type}")
+    logger.info(f"optimizer: {cfg.opt.type}")  
     logger.info(f"Learning rate: {cfg.opt.lr}")
     logger.info(f"Device: {cfg.gpu}")
     logger.info("Training...")

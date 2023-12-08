@@ -37,15 +37,15 @@ def get_args():
     parser.add_argument(
         "--loss-functions", "-l",
         nargs = "+",
-        choices = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4'),
-        default = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4'),
+        choices = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
+        default = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
         help = "Select the loss functions that should be evaluated"
     )
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4"),
-        default = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4"),
+        choices = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
+        default = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(

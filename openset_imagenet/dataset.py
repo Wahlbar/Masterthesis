@@ -81,6 +81,8 @@ class ImagenetDataset(Dataset):
             class_weights: Tensor with weight for every class.
         """
         # TODO: BG class weight calculation
-        counts = self.dataset.groupby(1).count().to_numpy()
+        counts = self.dataset.groupby(1).count().to_numpy() #does .groupby() maintain the order?
+        # print(self.dataset)
+        # print(counts)
         class_weights = (len(self.dataset) / (counts * self.label_count))
         return torch.from_numpy(class_weights).float().squeeze()
