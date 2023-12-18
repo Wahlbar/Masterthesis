@@ -11,6 +11,7 @@ import torch
 import numpy
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
+from pathlib import Path
 from matplotlib import pyplot, cm, colors
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MaxNLocator, LogLocator
@@ -100,7 +101,8 @@ def get_args():
         help = "Select the GPU index that you have. You can specify an index or not. If not, 0 is assumed. If not selected, we will train on CPU only (not recommended)"
     )
     parser.add_argument(
-      "--plots",
+      "--plots-directory",
+      default = "evaluation/Protocol_{}",
       help = "Select where to write the plots into"
     )
     # TODO: Eventually look over the confidences
@@ -111,10 +113,16 @@ def get_args():
 
     args = parser.parse_args()
 
+    try:
+        args.plots_directory = args.plots_directory.format(args.protocols)
+    except:
+        pass
+    args.plots_directory = Path(args.plots_directory)
+
     suffix = 'linear' if args.linear else 'best' if args.use_best else 'last'
     if args.sort_by_loss:
       suffix += "_by_loss"
-    args.plots = args.plots or f"Results_{suffix}.pdf"
+    args.plots_directory = args.plots_directory or f"Results_{suffix}_{args.loss_functions}.pdf"
     args.table = args.table or f"Results_{suffix}.tex"
     return args
 
@@ -125,7 +133,7 @@ def load_scores(args):
     epoch = {p:{} for p in args.protocols}
     for protocol in args.protocols:
       for loss in args.loss_functions:
-        experiment_dir = args.output_directory / f"Protocol_{protocol}"
+        experiment_dir = args.output_directory / f"Protocol_{protocol}/{loss}"
         suffix = "_best" if args.use_best else "_curr"
         checkpoint_file = experiment_dir / (loss+suffix+".pth")
         score_files = {v : experiment_dir / f"{loss}_{v}_arr{suffix}.npz" for v in ("val", "test")}
@@ -171,7 +179,7 @@ def plot_OSCR(args, scores):
         openset_imagenet.util.plot_oscr(arrays=test, methods=[l]*len(args.protocols), scale=scale, title=f'{args.labels[index]} Negative',
                       ax_label_font=font, ax=axs[index], unk_label=-1,)
         openset_imagenet.util.plot_oscr(arrays=test, methods=[l]*len(args.protocols), scale=scale, title=f'{args.labels[index]} Unknown',
-                      ax_label_font=font, ax=axs[index+P], unk_label=-2,)
+                      ax_label_font=font, ax=axs[index+P], unk_label=-2,) #TODO: HERE!!!!
       # Manual legend
       axs[-P].legend([f"$P_{p}$" for p in args.protocols], frameon=False,
                 fontsize=font - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
@@ -400,8 +408,8 @@ def main():
   print("Extracting and loading scores")
   scores, epoch = load_scores(args)
 
-  print("Writing file", args.plots)
-  pdf = PdfPages(args.plots)
+  print("Writing file", args.plots_directory)
+  pdf = PdfPages(args.plots_directory)
   try:
     # plot OSCR (actually not required for best case)
     # TODO: Why does it try to plot OSCR first?

@@ -322,7 +322,7 @@ def worker(cfg):
     if cfg.patience > 0:
         early_stopping = EarlyStopping(patience=cfg.patience)
 
-    # Set dictionaries to keep track of the lossesEOS2
+    # Set dictionaries to keep track of the losses
     t_metrics = defaultdict(AverageMeter)
     v_metrics = defaultdict(AverageMeter)
 
@@ -359,10 +359,10 @@ def worker(cfg):
         # weights = device(train_ds.calculate_known_and_negative_weights())
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[1:]
-        unknown_weight = class_weights[0]
+        negative_weight = class_weights[0]
         # print(class_weights, len(class_weights))
         # print(known_weights, len(known_weights))
-        loss = EntropicOpensetLoss4(n_classes, kn_w=known_weights, ukn_w=unknown_weight, unk_weight=1)
+        loss = EntropicOpensetLoss4(n_classes, kn_w=known_weights, neg_w=negative_weight)
     
     elif cfg.loss.type == "EOS5":
         # We select entropic loss using the unknown class weights from the config file
@@ -374,16 +374,16 @@ def worker(cfg):
     
     elif cfg.loss.type == "EOSFCL2":
         # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLossFCL2(n_classes, gamma=1, alpha=1)
+        loss = EntropicOpensetLossFCL2(n_classes, gamma=2, alpha=1)
 
     elif cfg.loss.type == "EOSFCL3":
         # We select entropic loss using the unknown class weights from the config file
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[1:]
-        unknown_weight = class_weights[0]
+        negative_weight = class_weights[0]
         # print(class_weights, len(class_weights))
         # print(known_weights, len(known_weights))
-        loss = EntropicOpensetLossFCL3(n_classes, gamma=1, alpha=1, kn_w=known_weights, ukn_w=unknown_weight)
+        loss = EntropicOpensetLossFCL3(n_classes, gamma=1, kn_w=known_weights, neg_w=negative_weight)
 
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
@@ -506,14 +506,14 @@ def worker(cfg):
             f"t:{train_time:.1f}s "
             f"v:{val_time:.1f}s")
 
-        # save best model and current model
-        ckpt_name = str(cfg.output_directory / cfg.name) + "_curr.pth"
+        # save best model and current model #TODO How to save the files? #TODO: Changed some stuff here!
+        ckpt_name = str(cfg.output_directory / cfg.loss.type / cfg.name) + "_curr.pth"
         save_checkpoint(ckpt_name, model, epoch, opt, curr_score, scheduler=scheduler)
 
         if curr_score > BEST_SCORE:
             BEST_SCORE = curr_score
-            ckpt_name = str(cfg.output_directory / cfg.name) + "_best.pth"
-            # ckpt_name = f"{cfg.name}_best.pth"  # best model
+            ckpt_name = str(cfg.output_directory / cfg.loss.type / cfg.name) + "_best.pth"
+            # ckpt_name = f"{cfg.name}_best.pth"  # best model #TODO How to save the files?
             logger.info(f"Saving best model {ckpt_name} at epoch: {epoch}")
             save_checkpoint(ckpt_name, model, epoch, opt, BEST_SCORE, scheduler=scheduler)
 

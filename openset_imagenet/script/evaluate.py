@@ -18,12 +18,12 @@ def get_args():
 
     # directory parameters
     parser.add_argument(
-        "loss",
+        "--loss",
         choices = ["entropic", "EOS1", "EOS2", "EOS3", "EOS4", "EOS5", "EOSFCL1", "EOSFCL2",  "EOSFCL3", "softmax", "garbage"],
         help="Which loss function to evaluate"
     )
     parser.add_argument(
-        "protocol",
+        "--protocol",
         type = int,
         choices = (1,2,3),
         help = "Which protocol to evaluate"
@@ -55,7 +55,7 @@ def get_args():
     )
     parser.add_argument(
         "--output-directory",
-        default = "experiments/Protocol_{}",
+        default = "experiments/Protocol_{}/{}",
         help = "Where to find the results of the experiments"
     )
     parser.add_argument(
@@ -72,7 +72,7 @@ def get_args():
 
     args = parser.parse_args()
     try:
-        args.output_directory = args.output_directory.format(args.protocol)
+        args.output_directory = args.output_directory.format(args.protocol, args.loss)
     except:
         pass
     args.output_directory = Path(args.output_directory)

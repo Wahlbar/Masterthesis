@@ -80,9 +80,17 @@ class ImagenetDataset(Dataset):
         Returns:
             class_weights: Tensor with weight for every class.
         """
-        # TODO: BG class weight calculation
-        counts = self.dataset.groupby(1).count().to_numpy() #does .groupby() maintain the order?
+        # TODO: does .groupby() maintain the order? Yes, it sorts the dataset according to the class label from -1 to 29.
+        # print("Dataset")
         # print(self.dataset)
+        # print("Groupby")
+        # print(self.dataset.groupby(1))
+        # print("Groupyby & Count")
+        # print(self.dataset.groupby(1).count())
+
+        counts = self.dataset.groupby(1).count().to_numpy() 
+        # print("Counts")
         # print(counts)
+
         class_weights = (len(self.dataset) / (counts * self.label_count))
         return torch.from_numpy(class_weights).float().squeeze()
