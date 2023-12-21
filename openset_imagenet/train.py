@@ -133,6 +133,7 @@ def train(model, data_loader, optimizer, loss_fn, trackers, cfg):
 
         # Calculate loss
         j = loss_fn(logits, labels)
+        print(j)
         trackers["j"].update(j.item(), batch_len)
         # Backward pass
         j.backward()

@@ -93,4 +93,5 @@ class ImagenetDataset(Dataset):
         # print(counts)
 
         class_weights = (len(self.dataset) / (counts * self.label_count))
+        print(class_weights)
         return torch.from_numpy(class_weights).float().squeeze()

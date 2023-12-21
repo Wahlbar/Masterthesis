@@ -122,7 +122,7 @@ def get_args():
     suffix = 'linear' if args.linear else 'best' if args.use_best else 'last'
     if args.sort_by_loss:
       suffix += "_by_loss"
-    args.plots_directory = args.plots_directory or f"Results_{suffix}_{args.loss_functions}.pdf"
+    args.plots_directory = f"Results_{suffix}_{args.loss_functions}.pdf"
     args.table = args.table or f"Results_{suffix}.tex"
     return args
 
@@ -208,17 +208,21 @@ def plot_confidences(args):
 
   # locate event paths
   event_files = {p:collections.defaultdict(list) for p in args.protocols}
+  # print(args.protocols)
+  # for l in args.loss_functions:
+  #   print(l)
   for protocol in args.protocols:
     protocol_dir = args.output_directory/f"Protocol_{protocol}"
     if os.path.exists(protocol_dir):
       files = sorted(os.listdir(protocol_dir))
       # get the event files
       for f in files:
-        if f.startswith("event"):
-          loss = f.split("-")[1].split(".")[0]
-          # set (overwrite) event file
-          event_files[protocol][loss].append(protocol_dir / f)
-
+        for l in args.loss_functions:
+          if f.startswith("event") and f.endswith(l + ".log"):
+            loss = f.split("-")[1].split(".")[0]
+            # set (overwrite) event file
+            event_files[protocol][loss].append(protocol_dir / f)
+  # print(event_files)
   P = len(args.protocols)
   linewidth = 1.5
   legend_pos = "lower right"
@@ -236,7 +240,16 @@ def plot_confidences(args):
       try:
         event_acc = EventAccumulator(str(event_file), size_guidance={'scalars': 0})
         event_acc.Reload()
+        print("conf known")
+        print(event_acc.Scalars('val/conf_kn'))
+        print("conf unknown")
+        print(event_acc.Scalars('val/conf_unk'))
         for event in event_acc.Scalars('val/conf_kn'):
+          print("event")
+          print(event)
+          print(event[2])
+          print(event[1])
+          print(event[1]+1)
           known_data[event[1]+1] = event[2]
         for event in event_acc.Scalars('val/conf_unk'):
           unknown_data[event[1]+1] = event[2]
