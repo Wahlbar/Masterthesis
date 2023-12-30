@@ -16,7 +16,7 @@ from loguru import logger
 from .metrics import confidence, auc_score_binary, auc_score_multiclass
 from .dataset import ImagenetDataset
 from .model import ResNet50
-from .losses import AverageMeter, EarlyStopping, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetLoss5, EntropicOpensetLossFCL1, EntropicOpensetLossFCL2, EntropicOpensetLossFCL3
+from .losses import AverageMeter, EarlyStopping, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetFocalLoss1, EntropicOpensetFocalLoss2, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
 import tqdm
 
 
@@ -357,34 +357,43 @@ def worker(cfg):
 
     elif cfg.loss.type == "EOS4":
         # We select entropic loss using the unknown class weights from the config file
-        # weights = device(train_ds.calculate_known_and_negative_weights())
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[1:]
         negative_weight = class_weights[0]
-        # print(class_weights, len(class_weights))
-        # print(known_weights, len(known_weights))
         loss = EntropicOpensetLoss4(n_classes, kn_w=known_weights, neg_w=negative_weight)
     
-    elif cfg.loss.type == "EOS5":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLoss5(n_classes)
-
-    elif cfg.loss.type == "EOSFCL1":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLossFCL1(n_classes, gamma=1, alpha=1)
-    
-    elif cfg.loss.type == "EOSFCL2":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLossFCL2(n_classes, gamma=2, alpha=1)
-
-    elif cfg.loss.type == "EOSFCL3":
+    elif cfg.loss.type == "EOSF":
         # We select entropic loss using the unknown class weights from the config file
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[1:]
         negative_weight = class_weights[0]
-        # print(class_weights, len(class_weights))
-        # print(known_weights, len(known_weights))
-        loss = EntropicOpensetLossFCL3(n_classes, gamma=1, kn_w=known_weights, neg_w=negative_weight)
+        loss = EntropicOpensetLossF(n_classes, kn_w=known_weights, neg_w=negative_weight)
+
+    elif cfg.loss.type == "FCL1":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetFocalLoss1(n_classes, gamma=1, alpha=1)
+    
+    elif cfg.loss.type == "FCL2":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetFocalLoss2(n_classes, gamma=2, alpha=1)
+
+    elif cfg.loss.type == "FCLF":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetFocalLossF(n_classes, gamma=1, alpha=1)
+
+
+    elif cfg.loss.type == "FCLK":
+        # We select entropic loss using the unknown class weights from the config file
+        class_weights = device(train_ds.calculate_class_weights())
+        negative_weight = class_weights[0]
+        loss = EntropicOpensetFocalLossKnown(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
+
+    
+    elif cfg.loss.type == "FCLN":
+        # We select entropic loss using the unknown class weights from the config file
+        class_weights = device(train_ds.calculate_class_weights())
+        known_weights = class_weights[1:]
+        loss = EntropicOpensetFocalLossNegative(n_classes, gamma=1, alpha=1, kn_w=known_weights)
 
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
@@ -400,7 +409,7 @@ def worker(cfg):
                      logit_bias=False)
     device(model)
 
-    # Create optimizer, sgd = stochastic gradient descent 
+    # Create optimizer, sgd = stochastic descent 
     if cfg.opt.type == "sgd":
         opt = torch.optim.SGD(params=model.parameters(), lr=cfg.opt.lr, momentum=0.9)
     else:

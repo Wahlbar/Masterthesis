@@ -82,7 +82,6 @@ class ImagenetDataset(Dataset):
         """
         # TODO: does .groupby() maintain the order? Yes, it sorts the dataset according to the class label from -1 to 29.
         # print("Dataset")
-        # print(self.dataset)
         # print("Groupby")
         # print(self.dataset.groupby(1))
         # print("Groupyby & Count")
@@ -90,8 +89,6 @@ class ImagenetDataset(Dataset):
 
         counts = self.dataset.groupby(1).count().to_numpy() 
         # print("Counts")
-        # print(counts)
-
         class_weights = (len(self.dataset) / (counts * self.label_count))
-        print(class_weights)
+
         return torch.from_numpy(class_weights).float().squeeze()

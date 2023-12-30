@@ -5,6 +5,7 @@ import multiprocessing
 import subprocess
 import pathlib
 import openset_imagenet
+from pathlib import Path
 import os
 
 #def train_one(cmd):
@@ -35,8 +36,8 @@ def get_args():
     parser.add_argument(
       "--loss-functions", "-l",
       nargs = "+",
-      choices = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3', 'softmax', 'garbage'),
-      default = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3', 'softmax', 'garbage'),
+      choices = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN', 'softmax', 'garbage'),
+      default = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN', 'softmax', 'garbage'),
       help = "Select the loss functions that should be evaluated"
       )
     parser.add_argument(
@@ -75,7 +76,7 @@ def commands(args):
     for loss_function in args.loss_functions:
       # load config file
       config = openset_imagenet.util.load_yaml(args.configuration)
-      outdir = os.path.join(args.output_directory, f"Protocol_{protocol}")
+      outdir = os.path.join(args.output_directory, f"Protocol_{protocol}", f"{loss_function}")
       # modify config file
       config.loss.type = loss_function
       config.name = loss_function

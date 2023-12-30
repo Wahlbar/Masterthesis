@@ -38,15 +38,15 @@ def get_args():
     parser.add_argument(
         "--loss-functions", "-l",
         nargs = "+",
-        choices = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
-        default = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
+        choices = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        default = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the loss functions that should be evaluated"
     )
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
-        default = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOS5', 'EOSFCL1', 'EOSFCL2', 'EOSFCL3'),
+        choices = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        default = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -102,28 +102,26 @@ def get_args():
     )
     parser.add_argument(
       "--plots-directory",
-      default = "evaluation/Protocol_{}",
+      default = "evaluation/",
       help = "Select where to write the plots into"
     )
-    # TODO: Eventually look over the confidences
     parser.add_argument(
       "--table",
       help = "Select the file where to write the Confidences (gamma) and CCR into"
     )
 
     args = parser.parse_args()
-
-    try:
-        args.plots_directory = args.plots_directory.format(args.protocols)
-    except:
-        pass
+    
     args.plots_directory = Path(args.plots_directory)
 
     suffix = 'linear' if args.linear else 'best' if args.use_best else 'last'
     if args.sort_by_loss:
       suffix += "_by_loss"
-    args.plots_directory = f"Results_{suffix}_{args.loss_functions}.pdf"
-    args.table = args.table or f"Results_{suffix}.tex"
+    args.file_name = f"Results_{suffix}_{args.loss_functions}.pdf"
+    args.file_path = args.plots_directory / args.file_name
+    args.table_name = args.table or f"Results_{suffix}_{args.loss_functions}.tex"
+    args.table_path = Path("evaluation") / args.table_name
+    print(args.table_path)
     return args
 
 
@@ -240,19 +238,10 @@ def plot_confidences(args):
       try:
         event_acc = EventAccumulator(str(event_file), size_guidance={'scalars': 0})
         event_acc.Reload()
-        print("conf known")
-        print(event_acc.Scalars('val/conf_kn'))
-        print("conf unknown")
-        print(event_acc.Scalars('val/conf_unk'))
         for event in event_acc.Scalars('val/conf_kn'):
-          print("event")
-          print(event)
-          print(event[2])
-          print(event[1])
-          print(event[1]+1)
-          known_data[event[1]+1] = event[2]
+          known_data[event.step+1] = event.value
         for event in event_acc.Scalars('val/conf_unk'):
-          unknown_data[event[1]+1] = event[2]
+          unknown_data[event.step+1] = event.value
       except KeyError: pass
 
     # re-structure
@@ -379,7 +368,7 @@ def conf_and_ccr_table(args, scores, epochs):
   query = [1e-3, 1e-2, 0.1,1.0]
   unk_label = -2
 
-  with open(args.table, "w") as table:
+  with open(args.table_path, "w") as table:
     for p, protocol in enumerate(args.protocols):
       for l, loss in enumerate(args.loss_functions):
         for which in ["test"]:
@@ -421,23 +410,21 @@ def main():
   print("Extracting and loading scores")
   scores, epoch = load_scores(args)
 
-  print("Writing file", args.plots_directory)
-  pdf = PdfPages(args.plots_directory)
+  print("Writing file", args.file_name)
+  pdf = PdfPages(args.file_path)
   try:
     # plot OSCR (actually not required for best case)
-    # TODO: Why does it try to plot OSCR first?
     print("Plotting OSCR curves")
     plot_OSCR(args, scores)
     pdf.savefig(bbox_inches='tight', pad_inches = 0)
 
     # TODO: Give no argument for the confidence propagation plot
-    if not args.linear and not args.use_best and not args.sort_by_loss:
+    if not args.linear and not args.sort_by_loss:
       # plot confidences
       print("Plotting confidence plots")
       plot_confidences(args)
       pdf.savefig(bbox_inches='tight', pad_inches = 0)
 
-    if not args.linear and not args.sort_by_loss:
       # plot histograms
       print("Plotting softmax histograms")
       plot_softmax(args, scores)
@@ -449,5 +436,5 @@ def main():
   # create result table
   if not args.linear and not args.sort_by_loss:
     print("Creating Table")
-    print("Writing file", args.table)
+    print("Writing file", args.table_path)
     conf_and_ccr_table(args, scores, epoch)
