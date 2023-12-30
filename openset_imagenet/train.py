@@ -516,13 +516,14 @@ def worker(cfg):
             f"t:{train_time:.1f}s "
             f"v:{val_time:.1f}s")
 
-        # save best model and current model #TODO How to save the files? #TODO: Changed some stuff here!
-        ckpt_name = str(cfg.output_directory / cfg.loss.type / cfg.name) + "_curr.pth"
+        # save best model and current model #TODO: Changed some stuff here!
+
+        ckpt_name = str(cfg.output_directory / cfg.name) + "_curr.pth"
         save_checkpoint(ckpt_name, model, epoch, opt, curr_score, scheduler=scheduler)
 
         if curr_score > BEST_SCORE:
             BEST_SCORE = curr_score
-            ckpt_name = str(cfg.output_directory / cfg.loss.type / cfg.name) + "_best.pth"
+            ckpt_name = str(cfg.output_directory / cfg.name) + "_best.pth"
             # ckpt_name = f"{cfg.name}_best.pth"  # best model #TODO How to save the files?
             logger.info(f"Saving best model {ckpt_name} at epoch: {epoch}")
             save_checkpoint(ckpt_name, model, epoch, opt, BEST_SCORE, scheduler=scheduler)

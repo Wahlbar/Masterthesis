@@ -13,16 +13,11 @@ class EntropicOpensetLoss:
         self.unknowns_multiplier = unk_weight / self.class_count
         self.ones = tools.device(torch.ones(self.class_count)) * self.unknowns_multiplier
         self.cross_entropy = torch.nn.CrossEntropyLoss()
-        # print("unk_weight = ", unk_weight, "\n")
 
     def __call__(self, logits, target):
         categorical_targets = tools.device(torch.zeros(logits.shape))
         unk_idx = target < 0
         kn_idx = ~unk_idx
-        # print("Categorial Targets: ")
-        # torch.set_printoptions(threshold=10_000)
-        # print(categorical_targets)
-        # check if there is known samples in the batch
         if torch.any(kn_idx):
             categorical_targets[kn_idx, :] = self.eye[target[kn_idx]]
 
@@ -31,22 +26,6 @@ class EntropicOpensetLoss:
                 torch.sum(unk_idx).item(), self.class_count
             )
         )
-
-        # print("Categorial Targets: ")
-        # print(categorical_targets)
-        # print("\n")
-        # print("unk_idx: ")
-        # print(unk_idx)
-        # print("\n")
-        # print("target: ")
-        # print(target)
-        # print("\n")
-        # print("kn_idx: ")
-        # print(kn_idx)
-        # print("\n")
-        # print("logits: ")
-        # print(logits)
-        # print("\n")
 
         return self.cross_entropy(logits, categorical_targets)
 
@@ -85,19 +64,6 @@ class EntropicOpensetLoss1():
         # take the mean of the cross entropy
         mean_cross_entropy = torch.mean(weighted_cross_entropy)
 
-        # print("Weights: ")
-        # print(weights)
-        # print("Categorial Targets: ")
-        # torch.set_printoptions(threshold=10_000)
-        # print(categorical_targets)
-        # print("\n")
-        # print("weighted_cross_entropy: ")
-        # print(weighted_cross_entropy)
-        # print("\n")
-        # print("summed_cross_entropy: ")
-        # print(summed_cross_entropy)
-        # print("\n")
-        
         return mean_cross_entropy
     
 """ EOS with negative weighting with 0.5"""
@@ -135,19 +101,6 @@ class EntropicOpensetLoss2:
         # take the mean of the cross entropy
         mean_cross_entropy = torch.mean(weighted_cross_entropy)
 
-        # print("Weights: ")
-        # print(weights)
-        # print("Categorial Targets: ")
-        # torch.set_printoptions(threshold=10_000)
-        # print(categorical_targets)
-        # print("\n")
-        # print("weighted_cross_entropy: ")
-        # print(weighted_cross_entropy)
-        # print("\n")
-        # print("summed_cross_entropy: ")
-        # print(summed_cross_entropy)
-        # print("\n")
-
         return mean_cross_entropy
 
 """ EOS with negative weighting 0.1"""
@@ -180,22 +133,9 @@ class EntropicOpensetLoss3:
 
         # multiplicate the negative indices with a weight of 0.1
         weighted_cross_entropy[neg_idx] *= 0.1
-        print(weighted_cross_entropy)
+
         # take the mean of the cross entropy
         mean_cross_entropy = torch.mean(weighted_cross_entropy)
-
-        # print("Weights: ")
-        # print(weights)
-        # print("Categorial Targets: ")
-        # torch.set_printoptions(threshold=10_000)
-        # print(categorical_targets)
-        # print("\n")
-        # print("weighted_cross_entropy: ")
-        # print(weighted_cross_entropy)
-        # print("\n")
-        # print("summed_cross_entropy: ")
-        # print(summed_cross_entropy)
-        # print("\n")
         
         return mean_cross_entropy
     
@@ -242,19 +182,6 @@ class EntropicOpensetLoss4:
         # take the mean of the cross entropy
         mean_cross_entropy = torch.mean(weighted_cross_entropy)
 
-        # print("Weights: ")
-        # print(weights)
-        # print("Categorial Targets: ")
-        # torch.set_printoptions(threshold=10_000)
-        # print(categorical_targets)
-        # print("\n")
-        # print("weighted_cross_entropy: ")
-        # print(weighted_cross_entropy)
-        # print("\n")
-        # print("summed_cross_entropy: ")
-        # print(summed_cross_entropy)
-        # print("\n")
-
         return mean_cross_entropy
     
 """ EOS filler to try out new stuff"""
@@ -300,19 +227,6 @@ class EntropicOpensetLossF:
 
         # take the mean of the cross entropy
         mean_cross_entropy = torch.mean(weighted_cross_entropy)
-
-        # print("Weights: ")
-        # print(weights)
-        # print("Categorial Targets: ")
-        # torch.set_printoptions(threshold=10_000)
-        # print(categorical_targets)
-        # print("\n")
-        # print("weighted_cross_entropy: ")
-        # print(weighted_cross_entropy)
-        # print("\n")
-        # print("summed_cross_entropy: ")
-        # print(summed_cross_entropy)
-        # print("\n")
 
         return mean_cross_entropy
 
@@ -396,17 +310,6 @@ class EntropicOpensetFocalLoss2:
         self.gamma = gamma         
 
     def __call__(self, logits, target):
-                
-        """ old version: 
-        # ugly but works!
-        for i in range(len(weighted_loss)):
-            categorical_target = categorical_targets[i]
-            softmax_element = softmax[i]
-            if neg_idx[i] == True:
-                weight = (categorical_target - softmax_element) ** self.gamma
-            print(weight)
-            weighted_loss[i] = (-1) ** (self.gamma - 1) * self.alpha * torch.sum(weight * torch.log(softmax_element))
-        """
         
         # generate a tensor for the categorical targets
         categorical_targets = tools.device(torch.zeros(logits.shape))
