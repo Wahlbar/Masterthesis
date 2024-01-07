@@ -111,7 +111,8 @@ def get_args():
     )
 
     args = parser.parse_args()
-    
+
+    args.output_directory = Path(args.output_directory)
     args.plots_directory = Path(args.plots_directory)
 
     suffix = 'linear' if args.linear else 'best' if args.use_best else 'last'
@@ -206,20 +207,23 @@ def plot_confidences(args):
 
   # locate event paths
   event_files = {p:collections.defaultdict(list) for p in args.protocols}
+
   # print(args.protocols)
   # for l in args.loss_functions:
   #   print(l)
   for protocol in args.protocols:
     protocol_dir = args.output_directory/f"Protocol_{protocol}"
-    if os.path.exists(protocol_dir):
-      files = sorted(os.listdir(protocol_dir))
-      # get the event files
-      for f in files:
-        for l in args.loss_functions:
-          if f.startswith("event") and f.endswith(l + ".log"):
-            loss = f.split("-")[1].split(".")[0]
-            # set (overwrite) event file
-            event_files[protocol][loss].append(protocol_dir / f)
+    for loss_function in args.loss_functions:
+      loss_dir = protocol_dir/f"{loss_function}" 
+      if os.path.exists(loss_dir):
+        files = sorted(os.listdir(loss_dir))
+        # get the event files
+        for f in files:
+          for l in args.loss_functions:
+            if f.startswith("event") and f.endswith(l + ".log"):
+              loss = f.split("-")[1].split(".")[0]
+              # set (overwrite) event file
+              event_files[protocol][loss].append(loss_dir / f)
   # print(event_files)
   P = len(args.protocols)
   linewidth = 1.5
@@ -254,6 +258,7 @@ def plot_confidences(args):
       ax_unk = axs[2 * index + 1]
       for c, loss in enumerate(args.loss_functions):
         step_kn, val_kn, step_unk, val_unk = [[]]*4
+
         if loss in event_files[protocol]:
           # Read data from the tensorboard object
           (step_kn, val_kn), (step_unk, val_unk) = load_accumulators(event_files[protocol][loss])

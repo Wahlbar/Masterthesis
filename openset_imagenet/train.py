@@ -133,7 +133,6 @@ def train(model, data_loader, optimizer, loss_fn, trackers, cfg):
 
         # Calculate loss
         j = loss_fn(logits, labels)
-        print(j)
         trackers["j"].update(j.item(), batch_len)
         # Backward pass
         j.backward()
@@ -344,8 +343,10 @@ def worker(cfg):
         loss = EntropicOpensetLoss(n_classes, cfg.loss.w)
 
     elif cfg.loss.type == "EOS1":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLoss1(n_classes)
+        # We select entropic loss using the unknown class weights from the config file        
+        class_weights = device(train_ds.calculate_class_weights())
+        negative_weight = class_weights[0]
+        loss = EntropicOpensetLoss1(n_classes, neg_w=negative_weight)
     
     elif cfg.loss.type == "EOS2":
         # We select entropic loss using the unknown class weights from the config file
@@ -375,7 +376,7 @@ def worker(cfg):
     
     elif cfg.loss.type == "FCL2":
         # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetFocalLoss2(n_classes, gamma=2, alpha=1)
+        loss = EntropicOpensetFocalLoss2(n_classes, gamma=1, alpha=1)
 
     elif cfg.loss.type == "FCLF":
         # We select entropic loss using the unknown class weights from the config file

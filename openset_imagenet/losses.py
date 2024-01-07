@@ -29,14 +29,15 @@ class EntropicOpensetLoss:
 
         return self.cross_entropy(logits, categorical_targets)
 
-""" EOS with weighting with w = average_samples_per_known_class/number_of_negative_samples (both from training data)"""
+""" EOS with weighting for negative samples with w = average_samples_per_known_class/number_of_negative_samples (both from training data)"""
 class EntropicOpensetLoss1():
     """ Taken from vast, modified to accept mini batches without positive examples."""
-    def __init__(self, num_of_classes):
+    def __init__(self, num_of_classes, neg_w):
         self.class_count = num_of_classes
         self.eye = tools.device(torch.eye(self.class_count))
         self.probability_per_class = 1 / self.class_count
         self.negative_probabilities = tools.device(torch.ones(self.class_count)) * self.probability_per_class
+        self.negative_weight = neg_w  
         self.cross_entropy = torch.nn.CrossEntropyLoss(reduction='none')
 
     def __call__(self, logits, target):
@@ -59,7 +60,7 @@ class EntropicOpensetLoss1():
         weighted_cross_entropy = self.cross_entropy(logits, categorical_targets)
 
         # multiplicate the negative indices with a weight of 
-        weighted_cross_entropy[neg_idx] *= 28895/30/31794
+        weighted_cross_entropy[neg_idx] *= self.negative_weight
 
         # take the mean of the cross entropy
         mean_cross_entropy = torch.mean(weighted_cross_entropy)
@@ -472,7 +473,6 @@ class EntropicOpensetFocalLossKnown:
 
         # define the negative weights
         weight_negative = self.negative_weight
-        print(weight_negative)
 
         # calculate the weighted cross_entropy of the known samples, minus because cross entopy itself already uses a minus in it. we have to revert it.
         weighted_loss[kn_idx] = -weight_known * self.cross_entropy(
@@ -480,12 +480,10 @@ class EntropicOpensetFocalLossKnown:
         )
 
         # calculate the weighted cross_entropy of the negative samples, minus because cross entopy itself already uses a minus in it. we have to revert it.
-        weighted_loss[neg_idx] = -weight_negative * self.cross_entropy(
+        weighted_loss[neg_idx] = weight_negative * self.cross_entropy(
             logits[neg_idx], categorical_targets[neg_idx]
         )
 
-        print(weighted_loss)
-        stop
         # take the mean of the cross entropy
         mean_focal_loss = torch.mean(weighted_loss)
         return mean_focal_loss
@@ -546,19 +544,17 @@ class EntropicOpensetFocalLossNegative:
 
         # define the weight of the negative samples
         weight_negative = -self.alpha * abs((self.probability_per_class - argmax_y)) ** self.gamma
-        print(weight_known)
+
         # calculate the weighted cross_entropy of the known samples, minus because cross entopy itself already uses a minus in it. we have to revert it.
-        weighted_loss[kn_idx] = -weight_known[kn_idx] * self.cross_entropy(
+        weighted_loss[kn_idx] = weight_known[kn_idx] * self.cross_entropy(
             logits[kn_idx], categorical_targets[kn_idx]
         )
-
 
         # calculate the weighted cross_entropy of the negative samples, minus because cross entopy itself already uses a minus in it. we have to revert it.
         weighted_loss[neg_idx] = -weight_negative * self.cross_entropy(
             logits[neg_idx], categorical_targets[neg_idx]
         )
-        print(weighted_loss)
-        stop
+
         # take the mean of the cross entropy
         mean_focal_loss = torch.mean(weighted_loss)
         return mean_focal_loss
