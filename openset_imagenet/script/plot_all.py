@@ -38,15 +38,15 @@ def get_args():
     parser.add_argument(
         "--loss-functions", "-l",
         nargs = "+",
-        choices = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
-        default = ('softmax', 'garbage', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ('softmax', 'garbage', 'BG1', 'BG2', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        default = ('softmax', 'garbage', 'BG1', 'BG2', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the loss functions that should be evaluated"
     )
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
-        default = ("S", "BG", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ("S", "BG", "BG1", "BG2", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        default = ("S", "BG", "BG1", "BG2", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -106,23 +106,24 @@ def get_args():
       help = "Select where to write the plots into"
     )
     parser.add_argument(
-      "--table",
-      help = "Select the file where to write the Confidences (gamma) and CCR into"
+      "--table-directory",
+      default = "evaluation/",
+      help = "Select where to write the tables into"
     )
 
     args = parser.parse_args()
 
     args.output_directory = Path(args.output_directory)
     args.plots_directory = Path(args.plots_directory)
+    args.table_directory = Path(args.table_directory)
 
     suffix = 'linear' if args.linear else 'best' if args.use_best else 'last'
     if args.sort_by_loss:
       suffix += "_by_loss"
     args.file_name = f"Results_{suffix}_{args.loss_functions}.pdf"
     args.file_path = args.plots_directory / args.file_name
-    args.table_name = args.table or f"Results_{suffix}_{args.loss_functions}.tex"
-    args.table_path = Path("evaluation") / args.table_name
-    print(args.table_path)
+    args.table_name = f"Results_{suffix}_{args.loss_functions}.tex"
+    args.table_path = args.table_directory / args.table_name
     return args
 
 
@@ -157,7 +158,12 @@ def load_scores(args):
           print ("Checkpoint file", checkpoint_file, "not found, skipping protocol", protocol, loss)
           scores[protocol][loss] = None
           epoch[protocol][loss] = (0, 0)
-
+    # for key, value in scores.items():
+    #   for key2, value2 in value.items():
+    #     for key4, value4 in value2.items():
+    #       print(f'{key4}: {value4}')
+    #       for key3, value3 in value4.items():
+    #         print(f'{key3}: {value3}')
     return scores, epoch
 
 # TODO: OSCR
@@ -294,12 +300,11 @@ def plot_confidences(args):
   fig.text(0.5, 0.05, 'Epoch', ha='center', fontsize=font_size)
 
 
-# TODO: Softmax histogramms
+# Softmax histogramms
 def plot_softmax(args, scores):
 
     font_size = 15
     bins = 30
-    unk_label = -2
     P = len(args.protocols)
     N = len(args.loss_functions)
 
@@ -310,6 +315,8 @@ def plot_softmax(args, scores):
     # Manual colors
     edge_unk = colors.to_rgba('indianred', 1)
     fill_unk = colors.to_rgba('firebrick', 0.04)
+    edge_neg = colors.to_rgba('tab:orange', 1)
+    fill_neg = colors.to_rgba('tab:orange', 0.04)
     edge_kn = colors.to_rgba('tab:blue', 1)
     fill_kn = colors.to_rgba('tab:blue', 0.04)
 
@@ -317,21 +324,29 @@ def plot_softmax(args, scores):
     for protocol in args.protocols:
       for l, loss in enumerate(args.loss_functions):
         # Calculate histogram
-        drop_bg = loss == "garbage"  #  Drop the background class
+        drop_bg = loss in ["garbage", "BG1", "BG2", "BGF"]  #  Drop the background class
         if scores[protocol][loss] is not None:
           kn_hist, kn_edges, unk_hist, unk_edges = openset_imagenet.util.get_histogram(
               scores[protocol][loss]["test"],
-              unk_label=unk_label,
+              unk_label=-2, # for unknown samples
+              metric='score',
+              bins=bins,
+              drop_bg=drop_bg
+          )
+          kn_hist, kn_edges, neg_hist, neg_edges = openset_imagenet.util.get_histogram(
+              scores[protocol][loss]["test"],
+              unk_label=-1, # for negative samples
               metric='score',
               bins=bins,
               drop_bg=drop_bg
           )
         else:
-          kn_hist, kn_edges, unk_hist, unk_edges = [], [0], [], [0]
+          kn_hist, kn_edges, unk_hist, unk_edges, neg_hist, neg_edges = [], [0], [], [0], [], [0]
+        
         # Plot histograms
         axs[index].stairs(kn_hist, kn_edges, fill=True, color=fill_kn, edgecolor=edge_kn, linewidth=1)
         axs[index].stairs(unk_hist, unk_edges, fill=True, color=fill_unk, edgecolor=edge_unk, linewidth=1)
-
+        axs[index].stairs(neg_hist, neg_edges, fill=True, color=fill_neg, edgecolor=edge_neg, linewidth=1)
         # axs[ix].set_yscale('log')
         axs[index].set_title(f"$P_{{{protocol}}}$ {args.labels[l]}")
         index += 1
@@ -349,7 +364,7 @@ def plot_softmax(args, scores):
         ax.label_outer()
 
     # Manual legend
-    axs[-2].legend(['Known', 'Unknown'],
+    axs[-2].legend(['Known', 'Unknown', 'Negative'],
                   frameon=False,
                   fontsize=font_size-1,
                   bbox_to_anchor=(0.2, -0.08),
@@ -358,7 +373,73 @@ def plot_softmax(args, scores):
                   columnspacing=1,
                   markerscale=1)
     # X label
-    fig.text(0.5, 0.02, 'Score', ha='center', fontsize=font_size)
+    fig.text(0.5, 0.02, 'Score Test Set', ha='center', fontsize=font_size)
+
+# Softmax histogramms
+def plot_softmax_validation(args, scores):
+
+    font_size = 15
+    bins = 30
+    P = len(args.protocols)
+    N = len(args.loss_functions)
+
+    fig = pyplot.figure(figsize=(3*P+1, 2*N))
+    gs = fig.add_gridspec(N, P, hspace=0.2, wspace=0.08)
+    axs = gs.subplots(sharex=True, sharey=False)
+    axs = axs.flat
+    # Manual colors
+    edge_unk = colors.to_rgba('indianred', 1)
+    fill_unk = colors.to_rgba('firebrick', 0.04)
+    edge_kn = colors.to_rgba('tab:blue', 1)
+    fill_kn = colors.to_rgba('tab:blue', 0.04)
+
+    index = 0
+    for protocol in args.protocols:
+      for l, loss in enumerate(args.loss_functions):
+        # Calculate histogram
+        drop_bg = loss in ["garbage", "BG1", "BG2", "BGF"]  #  Drop the background class
+        if scores[protocol][loss] is not None:
+          kn_hist_val, kn_edges_val, neg_hist_val, neg_edges_val = openset_imagenet.util.get_histogram(
+              scores[protocol][loss]["val"],
+              unk_label=-1,
+              metric='score',
+              bins=bins,
+              drop_bg=drop_bg
+          )
+        else:
+          kn_hist_val, kn_edges_val, neg_hist_val, neg_edges_val = [], [0], [], [0]
+
+        # Plot histograms
+        axs[index].stairs(kn_hist_val, kn_edges_val, fill=True, color=fill_kn, edgecolor=edge_kn, linewidth=1)
+        axs[index].stairs(neg_hist_val, neg_edges_val, fill=True, color=fill_unk, edgecolor=edge_unk, linewidth=1)
+
+       # axs[ix].set_yscale('log')
+        axs[index].set_title(f"$P_{{{protocol}}}$ {args.labels[l]}")
+        index += 1
+
+    # Share y axis of the histograms of the same protocol
+    for p in range(P):
+      for l in range(1,N):
+        axs[N*p+l-1].sharey(axs[N*p+l])
+
+    for ax in axs:
+        # set the tick parameters for the current axis handler
+        ax.tick_params(which='both', bottom=True, top=True, left=True, right=True, direction='in')
+        ax.tick_params(labelbottom=True, labeltop=False, labelleft=True, labelright=False, labelsize=font_size)
+        ax.yaxis.set_major_locator(MaxNLocator(6))
+        ax.label_outer()
+
+    # Manual legend
+    axs[-2].legend(['Known', 'Negative'],
+                  frameon=False,
+                  fontsize=font_size-1,
+                  bbox_to_anchor=(0.2, -0.08),
+                  ncol=2,
+                  handletextpad=0.3,
+                  columnspacing=1,
+                  markerscale=1)
+    # X label
+    fig.text(0.5, 0.02, 'Score Validation Set', ha='center', fontsize=font_size)
 
 
 
@@ -384,8 +465,8 @@ def conf_and_ccr_table(args, scores, epochs):
           ccr_, fpr_ = openset_imagenet.util.calculate_oscr(gt, values, unk_label=unk_label)
 
           # get confidences on test set
-          offset = 0 if loss == "garbage" else 1 / (numpy.max(gt)+1)
-          last_valid_class = -1 if loss == "garbage" else None
+          offset = 0 if loss in ["garbage", "BG1", "BG2", "BGF"] else 1 / (numpy.max(gt)+1)
+          last_valid_class = -1 if loss == "garbage" or loss == "BG1" or loss == "BG2" or loss == "BGF" else None
           c = openset_imagenet.metrics.confidence(
               torch.tensor(values),
               torch.tensor(gt, dtype=torch.long),
@@ -413,6 +494,12 @@ def main():
 
 
   print("Extracting and loading scores")
+  print("Protocol(s): ")
+  for protocol in args.protocols:
+    print(protocol)
+  print("Losses: ")
+  for loss in args.loss_functions:
+    print(loss)
   scores, epoch = load_scores(args)
 
   print("Writing file", args.file_name)
@@ -431,8 +518,12 @@ def main():
       pdf.savefig(bbox_inches='tight', pad_inches = 0)
 
       # plot histograms
-      print("Plotting softmax histograms")
+      print("Plotting softmax testing histograms")
       plot_softmax(args, scores)
+      pdf.savefig(bbox_inches='tight', pad_inches = 0)
+
+      print("Plotting softmax validation histograms")
+      plot_softmax_validation(args, scores)
       pdf.savefig(bbox_inches='tight', pad_inches = 0)
 
   finally:
