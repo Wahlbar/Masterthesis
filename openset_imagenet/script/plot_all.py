@@ -38,15 +38,15 @@ def get_args():
     parser.add_argument(
         "--loss-functions", "-l",
         nargs = "+",
-        choices = ('softmax', 'garbage', 'BG1', 'BG2', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
-        default = ('softmax', 'garbage', 'BG1', 'BG2', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        default = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the loss functions that should be evaluated"
     )
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "BG1", "BG2", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
-        default = ("S", "BG", "BG1", "BG2", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ("S", "BG", "BG1", "BG2", "BGK", "BGN", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        default = ("S", "BG", "BG1", "BG2", "BGK", "BGN", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -324,7 +324,7 @@ def plot_softmax(args, scores):
     for protocol in args.protocols:
       for l, loss in enumerate(args.loss_functions):
         # Calculate histogram
-        drop_bg = loss in ["garbage", "BG1", "BG2", "BGF"]  #  Drop the background class
+        drop_bg = loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]  #  Drop the background class
         if scores[protocol][loss] is not None:
           kn_hist, kn_edges, unk_hist, unk_edges = openset_imagenet.util.get_histogram(
               scores[protocol][loss]["test"],
@@ -397,7 +397,7 @@ def plot_softmax_validation(args, scores):
     for protocol in args.protocols:
       for l, loss in enumerate(args.loss_functions):
         # Calculate histogram
-        drop_bg = loss in ["garbage", "BG1", "BG2", "BGF"]  #  Drop the background class
+        drop_bg = loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]  #  Drop the background class
         if scores[protocol][loss] is not None:
           kn_hist_val, kn_edges_val, neg_hist_val, neg_edges_val = openset_imagenet.util.get_histogram(
               scores[protocol][loss]["val"],
@@ -465,8 +465,8 @@ def conf_and_ccr_table(args, scores, epochs):
           ccr_, fpr_ = openset_imagenet.util.calculate_oscr(gt, values, unk_label=unk_label)
 
           # get confidences on test set
-          offset = 0 if loss in ["garbage", "BG1", "BG2", "BGF"] else 1 / (numpy.max(gt)+1)
-          last_valid_class = -1 if loss == "garbage" or loss == "BG1" or loss == "BG2" or loss == "BGF" else None
+          offset = 0 if loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"] else 1 / (numpy.max(gt)+1)
+          last_valid_class = -1 if loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"] else None
           c = openset_imagenet.metrics.confidence(
               torch.tensor(values),
               torch.tensor(gt, dtype=torch.long),

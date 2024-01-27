@@ -19,7 +19,7 @@ def get_args():
     # directory parameters
     parser.add_argument(
         "--loss",
-        choices = ["entropic", "EOS1", "EOS2", "EOS3", "EOS4", "EOSF", "FCL1", "FCL2",  "FCLF", "FCLK", "FCLN", "softmax", "garbage", "BG1", "BG2", "BGF"],
+        choices = ["entropic", "EOS1", "EOS2", "EOS3", "EOS4", "EOSF", "FCL1", "FCL2",  "FCLF", "FCLK", "FCLN", "softmax", "garbage", "BG1", "BG2", "BGK", "BGN", "BGF"],
         help="Which loss function to evaluate"
     )
     parser.add_argument(
@@ -116,7 +116,7 @@ def main():
         print("No GPU device selected, evaluation will be slow")
         set_device_cpu()
 
-    if args.loss in ["garbage", "BG1", "BG2", "BGF"]:
+    if args.loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
         n_classes = val_dataset.label_count # we use one class for the negatives
     else:
         n_classes = val_dataset.label_count - 1  # number of classes - 1 when training with unknowns

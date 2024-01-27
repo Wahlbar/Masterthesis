@@ -20,7 +20,7 @@ from loguru import logger
 from .metrics import confidence, auc_score_binary, auc_score_multiclass
 from .dataset import ImagenetDataset
 from .model import ResNet50
-from .losses import AverageMeter, BackgroundFocalLossF, BackgroundFocalLoss1, EarlyStopping, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetFocalLoss1, EntropicOpensetFocalLoss2, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
+from .losses import AverageMeter, BackgroundFocalLossF, BackgroundFocalLoss1, BackgroundFocalLossK, BackgroundFocalLossN, EarlyStopping, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetFocalLoss1, EntropicOpensetFocalLoss2, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
 import tqdm
 
 
@@ -157,7 +157,7 @@ def validate(model, data_loader, loss_fn, n_classes, trackers, cfg):
     for metric in trackers.values():
         metric.reset()
 
-    if cfg.loss.type in ["garbage", "BG1", "BG2", "BGF"]:
+    if cfg.loss.type in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
         min_unk_score = 0.
         unknown_class = n_classes - 1
         last_valid_class = -1
@@ -288,7 +288,7 @@ def worker(cfg):
         )
 
         # If using garbage class, replaces label -1 to maximum label + 1
-        if cfg.loss.type in ["garbage", "BG1", "BG2", "BGF"]:
+        if cfg.loss.type in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
             # Only change the unknown label of the training dataset
             train_ds.replace_negative_label()
             val_ds.replace_negative_label()
@@ -333,7 +333,7 @@ def worker(cfg):
     # set loss
     loss = None
 
-    if cfg.loss.type in ["softmax", "garbage", "BG1", "BG2", "BGF"]:
+    if cfg.loss.type in ["softmax", "garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
         # number of classes when training with extra garbage class for unknowns, or when unknowns are removed
         n_classes = train_ds.label_count
     
@@ -403,6 +403,7 @@ def worker(cfg):
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
         loss = torch.nn.CrossEntropyLoss(ignore_index=-1)
+        
     elif cfg.loss.type == "garbage":
         # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
@@ -415,6 +416,18 @@ def worker(cfg):
     elif cfg.loss.type == "BG2":
         # We use balanced class weights
         loss = BackgroundFocalLoss1(n_classes, gamma=1, alpha=1)
+
+    elif cfg.loss.type == "BGK":
+        # We use balanced class weights
+        class_weights = device(train_ds.calculate_class_weights())
+        negative_weight = class_weights[30]
+        loss = BackgroundFocalLossK(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
+
+    elif cfg.loss.type == "BGN":
+        # We use balanced class weights
+        class_weights = device(train_ds.calculate_class_weights())
+        known_weights = class_weights[:30]
+        loss = BackgroundFocalLossN(n_classes, gamma=1, alpha=1, kn_w=known_weights)
 
     elif cfg.loss.type == "BGF":
         # We use balanced class weights
