@@ -356,6 +356,108 @@ class EntropicOpensetFocalLoss2:
 
         return mean_focal_loss
     
+""" EOS with Focal Loss 3 with sum over all samples bigger than 1/c"""
+class EntropicOpensetFocalLoss3:
+    """ Taken from vast, modified to accept mini batches without positive examples."""
+    def __init__(self, num_of_classes, gamma, alpha):
+        self.class_count = num_of_classes
+        self.eye = tools.device(torch.eye(self.class_count))
+        self.probability_per_class = 1 / self.class_count
+        self.negative_probabilities = tools.device(torch.ones(self.class_count)) * self.probability_per_class
+        self.cross_entropy = torch.nn.CrossEntropyLoss(reduction='none')
+        self.alpha = alpha
+        self.gamma = gamma         
+
+    def __call__(self, logits, target):
+        
+        # generate a tensor for the categorical targets
+        categorical_targets = tools.device(torch.zeros(logits.shape))
+
+        # tensor with booleans for known and negative samples
+        neg_idx = target < 0
+        kn_idx = ~neg_idx
+        threshold = self.probability_per_class
+
+        if torch.any(kn_idx):
+            categorical_targets[kn_idx, :] = self.eye[target[kn_idx]]
+
+        # generates a [1/c, 1/c, ...] vector with length c & replaces the categorical classes in it.
+        categorical_targets[neg_idx, :] = (
+            self.negative_probabilities.expand(
+                torch.sum(neg_idx).item(), self.class_count
+            )
+        )
+
+        # calculate the softmax (prediction probabilities) without gradients to no interfere in the calculation
+        with torch.no_grad():
+            softmax = torch.softmax(logits, dim=1)
+
+        # generate the weighted loss 
+        weighted_loss = torch.zeros(logits.size(0), device=logits.device)
+
+        # # This focal loss on known samples approach is probably not that useful...
+
+        # weighted_loss2 = torch.zeros(logits.size(0), device=logits.device)
+        
+        # for i in range(len(weighted_loss2)):
+        #     targ = target[i]
+        #     categorical_target = categorical_targets[i]
+        #     softmax_element = softmax[i]
+        #     if kn_idx[i] == True:
+        #         print("categorical targets", categorical_target)
+        #         print("target", targ)
+        #         print("softmax element", softmax_element)
+        #         argmax_y = torch.max(softmax_element)
+        #         idx_kn = torch.argmax(softmax_element)
+        #         print("idx kn", idx_kn)
+        #         print("arg_max y", argmax_y)
+        #         print("categorical target", categorical_target[idx_kn])
+        #         weight = (-1) ** (self.gamma - 1) * self.alpha * (categorical_target[idx_kn] - argmax_y) ** self.gamma    
+        #         print("weight", weight)
+
+        # # for positive samples: get the highest probability of any classes (for each sample)
+        # y = torch.max(softmax[kn_idx], dim=1).values
+        # idx = torch.argmax(softmax[kn_idx], dim=1)
+        
+        # # define the weight of the positive samples
+        # weight_known = -self.alpha * abs((categorical_targets[kn_idx, idx] - y)) ** self.gamma
+    
+        # print("targets", categorical_targets[kn_idx, idx])
+        # print("y", y)
+        # print("idx", idx)
+        # print("weights", weight_known)
+
+        # # calculate the weighted cross_entropy of the known samples, minus because cross entopy itself already uses a minus in it. we have to revert it.
+        # weighted_loss[kn_idx] = -weight_known * self.cross_entropy(
+        #     logits[kn_idx], categorical_targets[kn_idx]
+        # )
+
+        # print(weighted_loss)
+
+        # for positive samples: get the probability of the correct class (for each sample)
+        predicted_prob = torch.argmax(categorical_targets[kn_idx, :], dim=1)
+
+        # define the weight of the known samples
+        weight_known = -self.alpha * (1 - softmax[kn_idx, predicted_prob]) ** self.gamma
+        
+        # calculate the weighted cross_entropy of the known samples       
+        weighted_loss[kn_idx] = -weight_known * self.cross_entropy(
+            logits[kn_idx], categorical_targets[kn_idx]
+        )
+
+        for i, (softmax_element, is_neg) in enumerate(zip(softmax, neg_idx)):
+            if is_neg:
+                softmax_l = softmax_element > threshold
+                cat_target = categorical_targets[i]
+                weight = (cat_target[softmax_l] - softmax_element[softmax_l]) ** self.gamma
+                weighted_loss[i] = (-1) ** (self.gamma - 1) * self.alpha * torch.sum(weight * torch.log(softmax_element[softmax_l]))
+        
+        # softmax_l2 = softmax[neg_idx] > threshold Maybe use for optimization
+        # take the mean of the cross entropy
+        mean_focal_loss = torch.mean(weighted_loss)
+        print(weighted_loss)
+        # TODO: here
+        return mean_focal_loss
     
     """ EOS with Focal Loss Filler to try out new stuff ()"""
 class EntropicOpensetFocalLossF:
@@ -559,6 +661,73 @@ class EntropicOpensetFocalLossNegative:
         mean_focal_loss = torch.mean(weighted_loss)
         return mean_focal_loss
     
+    """ EOS with Focal Loss 3 with sum over all samples bigger than 1/c"""
+class EntropicOpensetFocalLossNegative2:
+    """ Taken from vast, modified to accept mini batches without positive examples."""
+    def __init__(self, num_of_classes, gamma, alpha):
+        self.class_count = num_of_classes
+        self.eye = tools.device(torch.eye(self.class_count))
+        self.probability_per_class = 1 / self.class_count
+        self.negative_probabilities = tools.device(torch.ones(self.class_count)) * self.probability_per_class
+        self.cross_entropy = torch.nn.CrossEntropyLoss(reduction='none')
+        self.alpha = alpha
+        self.gamma = gamma         
+
+    def __call__(self, logits, target):
+        
+        # generate a tensor for the categorical targets
+        categorical_targets = tools.device(torch.zeros(logits.shape))
+
+        # tensor with booleans for known and negative samples
+        neg_idx = target < 0
+        kn_idx = ~neg_idx
+        threshold = self.probability_per_class
+
+        if torch.any(kn_idx):
+            categorical_targets[kn_idx, :] = self.eye[target[kn_idx]]
+
+        # generates a [1/c, 1/c, ...] vector with length c & replaces the categorical classes in it.
+        categorical_targets[neg_idx, :] = (
+            self.negative_probabilities.expand(
+                torch.sum(neg_idx).item(), self.class_count
+            )
+        )
+
+        # calculate the softmax (prediction probabilities) without gradients to no interfere in the calculation
+        with torch.no_grad():
+            softmax = torch.softmax(logits, dim=1)
+
+        # generate the weight_known tensor
+        weight_known = tools.device(torch.zeros(len(target))) 
+
+        # generate the weighted loss 
+        weighted_loss = torch.zeros(logits.size(0), device=logits.device)
+
+        # define the weight of the known samples
+        for i in range(len(target)):
+            if target[i] > -1:
+                category = target[i]
+                weight_known[i] = self.known_weights[category]
+        
+        # calculate the weighted cross_entropy of the known samples       
+        weighted_loss[kn_idx] = -weight_known * self.cross_entropy(
+            logits[kn_idx], categorical_targets[kn_idx]
+        )
+
+        for i, (softmax_element, is_neg) in enumerate(zip(softmax, neg_idx)):
+            if is_neg:
+                softmax_l = softmax_element > threshold
+                cat_target = categorical_targets[i]
+                weight = (cat_target[softmax_l] - softmax_element[softmax_l]) ** self.gamma
+                weighted_loss[i] = (-1) ** (self.gamma - 1) * self.alpha * torch.sum(weight * torch.log(softmax_element[softmax_l]))
+        
+        # softmax_l2 = softmax[neg_idx] > threshold Maybe use for optimization
+        # take the mean of the cross entropy
+        mean_focal_loss = torch.mean(weighted_loss)
+        print(weighted_loss)
+        # TODO: Here
+        return mean_focal_loss
+    
 """ Softmax with Focal Loss 1 ()"""
 class BackgroundFocalLoss1:
     """ Taken from vast, modified to accept mini batches without positive examples."""
@@ -618,7 +787,7 @@ class BackgroundFocalLossK:
         categorical_targets = self.eye[target]
 
         # tensor with booleans for known and negative samples
-        neg_idx = target == 30
+        neg_idx = target == (self.class_count-1)
         kn_idx = ~neg_idx
 
         # calculate the softmax (prediction probabilities) without gradients to no interfere in the calculation
@@ -669,7 +838,7 @@ class BackgroundFocalLossN:
         categorical_targets = self.eye[target]
 
         # tensor with booleans for known and negative samples
-        neg_idx = target == 30
+        neg_idx = target == (self.class_count-1)
         kn_idx = ~neg_idx
 
         # calculate the softmax (prediction probabilities) without gradients to no interfere in the calculation
@@ -689,10 +858,9 @@ class BackgroundFocalLossN:
 
         # define the weight of the known samples
         for i in range(len(target)):
-            if target[i] != 30:
+            if target[i] != (self.class_count-1):
                 category = target[i]
                 weight_known[i] = self.known_weights[category]
-
         
         # calculate the weighted cross_entropy of the known samples, minus because cross entopy itself already uses a minus in it. we have to revert it.
         weighted_loss[neg_idx] = -weight_negative * self.cross_entropy(

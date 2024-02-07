@@ -20,7 +20,7 @@ from loguru import logger
 from .metrics import confidence, auc_score_binary, auc_score_multiclass
 from .dataset import ImagenetDataset
 from .model import ResNet50
-from .losses import AverageMeter, BackgroundFocalLossF, BackgroundFocalLoss1, BackgroundFocalLossK, BackgroundFocalLossN, EarlyStopping, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetFocalLoss1, EntropicOpensetFocalLoss2, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
+from .losses import AverageMeter, BackgroundFocalLossF, BackgroundFocalLoss1, BackgroundFocalLossK, BackgroundFocalLossN, EarlyStopping, EntropicOpensetFocalLoss3, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetFocalLossNegative2, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetFocalLoss1, EntropicOpensetFocalLoss2, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
 import tqdm
 
 
@@ -382,6 +382,10 @@ def worker(cfg):
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetFocalLoss2(n_classes, gamma=1, alpha=1)
 
+    elif cfg.loss.type == "FCL3":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetFocalLoss3(n_classes, gamma=1, alpha=1)
+
     elif cfg.loss.type == "FCLF":
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetFocalLossF(n_classes, gamma=1, alpha=1)
@@ -392,7 +396,6 @@ def worker(cfg):
         class_weights = device(train_ds.calculate_class_weights())
         negative_weight = class_weights[0]
         loss = EntropicOpensetFocalLossKnown(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
-
     
     elif cfg.loss.type == "FCLN":
         # We select entropic loss using the unknown class weights from the config file
@@ -400,10 +403,16 @@ def worker(cfg):
         known_weights = class_weights[1:]
         loss = EntropicOpensetFocalLossNegative(n_classes, gamma=1, alpha=1, kn_w=known_weights)
 
+    elif cfg.loss.type == "FCLN2":
+        # We select entropic loss using the unknown class weights from the config file
+        class_weights = device(train_ds.calculate_class_weights())
+        known_weights = class_weights[1:]
+        loss = EntropicOpensetFocalLossNegative2(n_classes, gamma=1, alpha=1, kn_w=known_weights)
+
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
         loss = torch.nn.CrossEntropyLoss(ignore_index=-1)
-        
+
     elif cfg.loss.type == "garbage":
         # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
@@ -420,13 +429,13 @@ def worker(cfg):
     elif cfg.loss.type == "BGK":
         # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
-        negative_weight = class_weights[30]
+        negative_weight = class_weights[n_classes-1]
         loss = BackgroundFocalLossK(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
 
     elif cfg.loss.type == "BGN":
         # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
-        known_weights = class_weights[:30]
+        known_weights = class_weights[:(n_classes-1)]
         loss = BackgroundFocalLossN(n_classes, gamma=1, alpha=1, kn_w=known_weights)
 
     elif cfg.loss.type == "BGF":

@@ -38,15 +38,15 @@ def get_args():
     parser.add_argument(
         "--loss-functions", "-l",
         nargs = "+",
-        choices = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
-        default = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCL3', 'FCLF', 'FCLK', 'FCLN'),
+        default = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCL3', 'FCLF', 'FCLK', 'FCLN'),
         help = "Select the loss functions that should be evaluated"
     )
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "BG1", "BG2", "BGK", "BGN", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
-        default = ("S", "BG", "BG1", "BG2", "BGK", "BGN", "BGF", "EOS", "EOS1", "EOS2", "EOS3", "EOS4", 'EOSF', 'FCL1', 'FCL2', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ("S", "BG", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
+        default = ("S", "BG", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -120,9 +120,9 @@ def get_args():
     suffix = 'linear' if args.linear else 'best' if args.use_best else 'last'
     if args.sort_by_loss:
       suffix += "_by_loss"
-    args.file_name = f"Results_{suffix}_{args.loss_functions}.pdf"
+    args.file_name = f"Results_{suffix}_{args.labels}.pdf"
     args.file_path = args.plots_directory / args.file_name
-    args.table_name = f"Results_{suffix}_{args.loss_functions}.tex"
+    args.table_name = f"Results_{suffix}_{args.labels}.tex"
     args.table_path = args.table_directory / args.table_name
     return args
 
@@ -167,11 +167,12 @@ def load_scores(args):
     return scores, epoch
 
 # TODO: OSCR
+# TODO: First plot
 def plot_OSCR(args, scores):
     # plot OSCR
     P = len(args.protocols)
     fig = pyplot.figure(figsize=(5*P,6))
-    gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.05)
+    gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.1)
     axs = gs.subplots(sharex=True, sharey=True)
     axs = axs.flat
     font = 15
@@ -184,9 +185,13 @@ def plot_OSCR(args, scores):
         openset_imagenet.util.plot_oscr(arrays=test, methods=[l]*len(args.protocols), scale=scale, title=f'{args.labels[index]} Negative',
                       ax_label_font=font, ax=axs[index], unk_label=-1,)
         openset_imagenet.util.plot_oscr(arrays=test, methods=[l]*len(args.protocols), scale=scale, title=f'{args.labels[index]} Unknown',
-                      ax_label_font=font, ax=axs[index+P], unk_label=-2,) #TODO: HERE!!!!
+                      ax_label_font=font, ax=axs[index+P], unk_label=-2,)
       # Manual legend
-      axs[-P].legend([f"$P_{p}$" for p in args.protocols], frameon=False,
+      if len(args.protocols) == 1:
+        axs[-P].legend([f"$P_{p}$" for p in args.protocols], frameon=False,
+                fontsize=font - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+      else:
+        axs[-P].legend([f"$P_{p}$" for p in args.protocols], frameon=False,
                 fontsize=font - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
     else:
       for index, p in enumerate(args.protocols):
@@ -195,20 +200,30 @@ def plot_OSCR(args, scores):
         openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Negative',
                       ax_label_font=font, ax=axs[index], unk_label=-1,)
         openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Unknown',
-                      ax_label_font=font, ax=axs[index+P], unk_label=-2,)
+                      ax_label_font=font, ax=axs[index+P], unk_label=-2,) #TODO: here aswell
       # Manual legend
-      axs[-P].legend(args.labels, frameon=False,
+      if len(args.protocols) == 1:
+         axs[-P].legend(args.labels, frameon=False,
+                fontsize=font - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+      else:
+        axs[-P].legend(args.labels, frameon=False,
                 fontsize=font - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
     # Axis properties
     for ax in axs:
         ax.label_outer()
         ax.grid(axis='x', linestyle=':', linewidth=1, color='gainsboro')
         ax.grid(axis='y', linestyle=':', linewidth=1, color='gainsboro')
+        
     # Figure labels
-    fig.text(0.5, 0.03, 'FPR', ha='center', fontsize=font)
-    fig.text(0.08, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
+    if len(args.protocols) == 1:
+      fig.text(0.5, 0.025, 'FPR', ha='center', fontsize=font)
+      fig.text(-0.01, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
+    else:
+      fig.text(0.5, 0.03, 'FPR', ha='center', fontsize=font)
+      fig.text(0.08, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
 
-# TODO: Confindence propagation plot
+# TODO: Confindence propagation plot 
+# TODO: Second plot
 def plot_confidences(args):
 
   # locate event paths
@@ -236,8 +251,10 @@ def plot_confidences(args):
   legend_pos = "lower right"
   font_size = 15
   color_palette = cm.get_cmap('tab10', 10).colors
-  fig = pyplot.figure(figsize=(12,3*P+1))
-  gs = fig.add_gridspec(P, 2, hspace=0.2, wspace=0.1)
+  # fig = pyplot.figure(figsize=(12,3*P+1))
+  # gs = fig.add_gridspec(P, 2, hspace=0.2, wspace=0.1)
+  fig = pyplot.figure(figsize=(5*P, 6))
+  gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.1)
   axs = gs.subplots(sharex=True, sharey=True)
   axs = axs.flat
 
@@ -260,8 +277,10 @@ def plot_confidences(args):
   max_len = 0
   min_len = 100
   for index, protocol in enumerate(args.protocols):
-      ax_kn = axs[2 * index]
-      ax_unk = axs[2 * index + 1]
+      # ax_kn = axs[2 * index]
+      # ax_unk = axs[2 * index + 1]
+      ax_kn = axs[index]
+      ax_unk = axs[index + P]
       for c, loss in enumerate(args.loss_functions):
         step_kn, val_kn, step_unk, val_unk = [[]]*4
 
@@ -283,8 +302,16 @@ def plot_confidences(args):
       ax_unk.set_title(f"$P_{protocol}$ Negative", fontsize=font_size)
 
   # Manual legend
-  axs[-2].legend(args.labels, frameon=False,
-                fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.1), ncol=3, handletextpad=0.5, columnspacing=1)
+  # axs[-2].legend(args.labels, frameon=False,
+  #               fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.1), ncol=3, handletextpad=0.5, columnspacing=1)
+  
+  # Manual legend
+  if len(args.protocols) == 1:
+    axs[-P].legend(args.labels, frameon=False,
+            fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+  else:
+    axs[-P].legend(args.labels, frameon=False,
+            fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
 
   for ax in axs:
       # set the tick parameters for the current axis handler
@@ -297,10 +324,16 @@ def plot_confidences(args):
       ax.xaxis.set_major_locator(MaxNLocator(6))
       ax.label_outer()
   # X label
-  fig.text(0.5, 0.05, 'Epoch', ha='center', fontsize=font_size)
+  if len(args.protocols) == 1:
+    # fig.text(0.5, 0, 'Epoch', ha='center', fontsize=font_size)
+    fig.text(0.5, 0.025, 'Epoch', ha='center', fontsize=font_size)    
+  else: 
+    # fig.text(0.5, 0.05, 'Epoch', ha='center', fontsize=font_size)
+    fig.text(0.5, 0.03, 'Epoch', ha='center', fontsize=font_size)
 
 
 # Softmax histogramms
+# TODO: Third plot
 def plot_softmax(args, scores):
 
     font_size = 15
@@ -308,17 +341,17 @@ def plot_softmax(args, scores):
     P = len(args.protocols)
     N = len(args.loss_functions)
 
-    fig = pyplot.figure(figsize=(3*P+1, 2*N))
-    gs = fig.add_gridspec(N, P, hspace=0.2, wspace=0.08)
+    fig = pyplot.figure(figsize=(3*N+1, 2*P))
+    gs = fig.add_gridspec(P, N, hspace=0.2, wspace=0.1)
     axs = gs.subplots(sharex=True, sharey=False)
     axs = axs.flat
     # Manual colors
     edge_unk = colors.to_rgba('indianred', 1)
     fill_unk = colors.to_rgba('firebrick', 0.04)
-    edge_neg = colors.to_rgba('tab:orange', 1)
-    fill_neg = colors.to_rgba('tab:orange', 0.04)
-    edge_kn = colors.to_rgba('tab:blue', 1)
-    fill_kn = colors.to_rgba('tab:blue', 0.04)
+    edge_neg = colors.to_rgba('tab:blue', 1)
+    fill_neg = colors.to_rgba('tab:blue', 0.04)
+    edge_kn = colors.to_rgba('tab:green', 1)
+    fill_kn = colors.to_rgba('tab:green', 0.04)
 
     index = 0
     for protocol in args.protocols:
@@ -364,16 +397,37 @@ def plot_softmax(args, scores):
         ax.label_outer()
 
     # Manual legend
-    axs[-2].legend(['Known', 'Unknown', 'Negative'],
-                  frameon=False,
-                  fontsize=font_size-1,
-                  bbox_to_anchor=(0.2, -0.08),
-                  ncol=2,
-                  handletextpad=0.3,
-                  columnspacing=1,
-                  markerscale=1)
+    if len(args.protocols) == 1:
+      axs[-2].legend(['Known', 'Unknown', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(0.8, -1.6),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
+      
+    elif len(args.loss_functions) == 4:
+      axs[-2].legend(['Known', 'Unknown', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(-1, -0.05),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
+      
+    else:
+      axs[-2].legend(['Known', 'Unknown', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(0.2, -0.08),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
     # X label
-    fig.text(0.5, 0.02, 'Score Test Set', ha='center', fontsize=font_size)
+    fig.text(0.5, 0.02, 'Test Set', ha='center', fontsize=font_size)
 
 # Softmax histogramms
 def plot_softmax_validation(args, scores):
@@ -383,15 +437,15 @@ def plot_softmax_validation(args, scores):
     P = len(args.protocols)
     N = len(args.loss_functions)
 
-    fig = pyplot.figure(figsize=(3*P+1, 2*N))
-    gs = fig.add_gridspec(N, P, hspace=0.2, wspace=0.08)
+    fig = pyplot.figure(figsize=(3*N+1, 2*P))
+    gs = fig.add_gridspec(P, N, hspace=0.2, wspace=0.1)
     axs = gs.subplots(sharex=True, sharey=False)
     axs = axs.flat
     # Manual colors
-    edge_unk = colors.to_rgba('indianred', 1)
-    fill_unk = colors.to_rgba('firebrick', 0.04)
-    edge_kn = colors.to_rgba('tab:blue', 1)
-    fill_kn = colors.to_rgba('tab:blue', 0.04)
+    edge_unk = colors.to_rgba('tab:blue', 1)
+    fill_unk = colors.to_rgba('tab:blue', 0.04)
+    edge_kn = colors.to_rgba('tab:green', 1)
+    fill_kn = colors.to_rgba('tab:green', 0.04)
 
     index = 0
     for protocol in args.protocols:
@@ -430,16 +484,37 @@ def plot_softmax_validation(args, scores):
         ax.label_outer()
 
     # Manual legend
-    axs[-2].legend(['Known', 'Negative'],
-                  frameon=False,
-                  fontsize=font_size-1,
-                  bbox_to_anchor=(0.2, -0.08),
-                  ncol=2,
-                  handletextpad=0.3,
-                  columnspacing=1,
-                  markerscale=1)
+    if len(args.protocols) == 1:
+      axs[-2].legend(['Known', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(0.8, -1.6),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
+      
+    elif len(args.loss_functions) == 4:
+      axs[-2].legend(['Known', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(-1, -0.05),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
+      
+    else:
+      axs[-2].legend(['Known', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(0.1, -0.08),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
     # X label
-    fig.text(0.5, 0.02, 'Score Validation Set', ha='center', fontsize=font_size)
+    fig.text(0.5, 0.02, 'Validation Set', ha='center', fontsize=font_size)
 
 
 

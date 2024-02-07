@@ -149,6 +149,7 @@ def plot_single_oscr(x, y, ax, exp_name, color, baseline, scale):
         locmin = ticker.LogLocator(base=10.0, subs=np.linspace(0, 1, 10, False), numticks=12)
         ax.xaxis.set_minor_locator(locmin)
         ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+        
     else:
         ax.set_ylim(0.0, 0.8)
         # ax.set_xlim(None, None)
@@ -164,6 +165,7 @@ def plot_single_oscr(x, y, ax, exp_name, color, baseline, scale):
             linestyle=linestyle,
             color=color,
             linewidth=linewidth)  # marker='2', markersize=1
+    
     return ax
 
 
@@ -194,6 +196,7 @@ def plot_oscr(arrays, methods, scale='linear', title=None, ax_label_font=13,
     if title is not None:
         ax.set_title(title, fontsize=ax_label_font)
     ax.tick_params(which='both', bottom=True, top=True, left=True, right=True, direction='in')
+    ax.tick_params(axis='x', pad=8)
     ax.tick_params(labelbottom=True, labeltop=False, labelleft=True,
                    labelright=False, labelsize=ax_label_font)
     return ax

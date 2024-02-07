@@ -19,7 +19,7 @@ def get_args():
     # directory parameters
     parser.add_argument(
         "--loss",
-        choices = ["entropic", "EOS1", "EOS2", "EOS3", "EOS4", "EOSF", "FCL1", "FCL2",  "FCLF", "FCLK", "FCLN", "softmax", "garbage", "BG1", "BG2", "BGK", "BGN", "BGF"],
+        choices = ["entropic", "EOS1", "EOS2", "EOS3", "EOS4", "EOSF", "FCL1", "FCL2", "FCL3", "FCLF", "FCLK", "FCLN", "softmax", "garbage", "BG1", "BG2", "BGK", "BGN", "BGF"],
         help="Which loss function to evaluate"
     )
     parser.add_argument(
