@@ -55,75 +55,9 @@ You can also select some of the `--protocols` to run on, as well as some of the 
 The `-g` option can take several GPU indexes, and trainings will be executed in parallel if more than one GPU index is specified.
 In case the training stops early for unknown reasons, you can safely use the `--continue` option to continue training from the last epoch.
 
-Runtime for a single GPU depends heavily on protocols. My experience is the following:
+Runtime for a single GPU depends heavily on protocols.
 
-
-    ```{=latex}
-
-             [PUT LATEX HERE]      
-
-    ```
-
-The following provide a short overview on the different weights used for my loss functions as well as their naming. For a more detailed explanation of my naming please look at my thesis or contact me.
-
-
-    ```{=latex}
-
-        \begin{table}[t]
-            \Caption[tab:overview eos weighting]{Overview of Implemented Entropic Open Set Weighting}{This table provides an overview of the implemented \ac{EOS}  weighting functions of known and negative weights. EOS 1 is the implementation of \cite{palechor2023protocols} with neutral weighting for all samples.}
-            \centering
-            \begin{tblr}{
-              colspec = {cccc},
-              cell{1}{2} = {c=3}{c}, % multicolumn
-              cell{3}{1} = {r=3}{c}, % multirow
-              cell{6}{1} = {r=2}{c}, % multirow
-              cell{7}{3} = {c=2}{c}, % multicolumn
-              cell{8}{1} = {r=2}{c}, % multirow
-              cell{10}{1} = {r=2}{c}, % multirow
-              rowsep = 6pt,
-              hlines = {black, 0.5pt},
-              vlines = {black, 0.5pt}, % vlines can not pass through multicolumn cells
-            }
-                            & \bf Entropic Open Set (EOS)   &               &                   \\
-            Weighting Type  & \bf Name                      & $w_{known}$   & $w_{negative}$    \\ 
-            Constant        & \bf EOS 1                     & 1             & 1                 \\
-                            & \bf EOS 0.5                   & 1             & 0.5               \\
-                            & \bf EOS 0.1                   & 1             & 0.1               \\ 
-            Balanced        & \bf EOS BN                    & 1             & \balancednegative \\
-                            & \bf EOS BC                    & \balanced     &                   \\      
-            Focal           & \bf EOS FM                    & \focalknown   & \focalmax         \\
-                            & \bf EOS FS                    & \focalknown   & \focalsum         \\
-            Mixed           & \bf EOS FK                    & \focalknown   & \balancednegative \\
-                            & \bf EOS FN                    & \balanced     & \focalmax         \\
-            \end{tblr}
-        \end{table}    
-
-        \begin{table}[t]
-            \Caption[tab:overview bg weighting]{Overview of Implemented SoftMax Weighting}{This table provides an overview of the implemented SoftMax with Background (BG)  weighting functions of known and negative weights. The 'balanced' BG B was already implemented by \cite{palechor2023protocols}. I reused it as a baseline.}
-            \centering
-            \begin{tblr}{
-              colspec = {cccc},
-              cell{1}{2} = {c=3}{c}, % multicolumn
-              cell{3}{3} = {c=2}{c}, % multicolumn
-              cell{4}{3} = {c=2}{c}, % multicolumn
-              cell{5}{3} = {c=2}{c}, % multicolumn
-              cell{6}{1} = {r=2}{c}, % multirow
-              rowsep = 6pt,
-              hlines = {black, 0.5pt},
-              vlines = {black, 0.5pt}, % vlines can not pass through multicolumn cells
-            }
-                            & \bf SoftMax with Background (BG)  &               &                   \\
-            Weighting Type  & \bf Name                          & $w_{known}$   & $w_{negative}$    \\ 
-            Constant        & \bf BG 1                          & 1             &                   \\ 
-            Balanced        & \bf BG B                          & \balanced     &                   \\    
-            Focal           & \bf BG F                          & \focalknown   &                   \\
-            Mixed           & \bf BG FK                         & \focalknown   & \balancednegative \\
-                            & \bf BG FN                         & \balanced     & \focalknown       \\
-
-            \end{tblr}
-        \end{table} 
-
-    ```
+For a more detailed explanation of my naming and the corresponding weighting schemes, please look at my thesis or contact me.
 
 ### Evaluation
 
