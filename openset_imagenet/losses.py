@@ -30,7 +30,7 @@ class EntropicOpensetLoss:
         return self.cross_entropy(logits, categorical_targets)
 
 """ EOS with weighting for negative samples with w = average_samples_per_known_class/number_of_negative_samples (both from training data)"""
-class EntropicOpensetLoss1():
+class EntropicOpensetLossBalancedNegative():
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, neg_w):
         self.class_count = num_of_classes
@@ -68,7 +68,7 @@ class EntropicOpensetLoss1():
         return mean_cross_entropy
     
 """ EOS with negative weighting with 0.5"""
-class EntropicOpensetLoss2:
+class EntropicOpensetLoss0_5:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes):
         self.class_count = num_of_classes
@@ -105,7 +105,7 @@ class EntropicOpensetLoss2:
         return mean_cross_entropy
 
 """ EOS with negative weighting 0.1"""
-class EntropicOpensetLoss3:
+class EntropicOpensetLoss0_1:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes):
         self.class_count = num_of_classes
@@ -141,7 +141,7 @@ class EntropicOpensetLoss3:
         return mean_cross_entropy
     
 """ EOS with Softmax with background weighting: w_c = N/(C * N_c)"""
-class EntropicOpensetLoss4:
+class EntropicOpensetLossBalancedComplete:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, kn_w, neg_w):
         self.class_count = num_of_classes
@@ -232,7 +232,7 @@ class EntropicOpensetLossF:
         return mean_cross_entropy
 
     """ EOS with Focal Loss 1 ()"""
-class EntropicOpensetFocalLoss1:
+class EntropicOpensetFocalLossMax:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, gamma, alpha):
         self.class_count = num_of_classes
@@ -299,7 +299,7 @@ class EntropicOpensetFocalLoss1:
         return mean_focal_loss
     
     """ EOS with Focal Loss 2 with sum over all classes ()"""
-class EntropicOpensetFocalLoss2:
+class EntropicOpensetFocalLossSum:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, gamma, alpha):
         self.class_count = num_of_classes
@@ -729,7 +729,7 @@ class EntropicOpensetFocalLossNegative2:
         return mean_focal_loss
     
 """ Softmax with Focal Loss 1 ()"""
-class BackgroundFocalLoss1:
+class BackgroundFocalLoss:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, gamma, alpha):
         self.class_count = num_of_classes
@@ -766,7 +766,7 @@ class BackgroundFocalLoss1:
 
         
 """ Softmax with Focal Loss Filler to try out new stuff ()"""
-class BackgroundFocalLossK:
+class BackgroundFocalLossKnown:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, gamma, alpha, neg_w):
         self.class_count = num_of_classes
@@ -817,7 +817,7 @@ class BackgroundFocalLossK:
         return mean_focal_loss
 
 """ Softmax with Focal Loss Filler to try out new stuff ()"""
-class BackgroundFocalLossN:
+class BackgroundFocalLossNegative:
     """ Taken from vast, modified to accept mini batches without positive examples."""
     def __init__(self, num_of_classes, gamma, alpha, kn_w):
         self.class_count = num_of_classes

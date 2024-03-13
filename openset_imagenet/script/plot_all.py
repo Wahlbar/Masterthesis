@@ -45,8 +45,8 @@ def get_args():
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
-        default = ("S", "BG", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
+        choices = ("S", "BG", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS 1", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
+        default = ("S", "BG", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS 1", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -171,8 +171,12 @@ def load_scores(args):
 def plot_OSCR(args, scores):
     # plot OSCR
     P = len(args.protocols)
-    fig = pyplot.figure(figsize=(5*P,6))
-    gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.1)
+    # For horizontal alignment
+    # fig = pyplot.figure(figsize=(5*P,6))
+    # gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.1)
+    # For vertical alignment
+    fig = pyplot.figure(figsize=(12,3*P+1))
+    gs = fig.add_gridspec(P, 2, hspace=0.2, wspace=0.1)
     axs = gs.subplots(sharex=True, sharey=True)
     axs = axs.flat
     font = 15
@@ -197,32 +201,52 @@ def plot_OSCR(args, scores):
       for index, p in enumerate(args.protocols):
 #        val = [scores[p][l]["val"] if scores[p][l] is not None else None for l in args.loss_functions]
         test = [scores[p][l]["test"] if scores[p][l] is not None else None for l in args.loss_functions]
+        # for vertical alignment
         openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Negative',
-                      ax_label_font=font, ax=axs[index], unk_label=-1,)
+                      ax_label_font=font, ax=axs[2*index], unk_label=-1,)
         openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Unknown',
-                      ax_label_font=font, ax=axs[index+P], unk_label=-2,) #TODO: here aswell
+                      ax_label_font=font, ax=axs[2*index+1], unk_label=-2,) #TODO: here aswell
+        # for horizontal alignment
+
+        # openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Negative',
+        #               ax_label_font=font, ax=axs[index], unk_label=-1,)
+        # openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Unknown',
+        #               ax_label_font=font, ax=axs[index+P], unk_label=-2,) #TODO: here aswell
       # Manual legend
       if len(args.protocols) == 1:
          axs[-P].legend(args.labels, frameon=False,
                 fontsize=font - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
       else:
+        # For horizontal alignment
+        # axs[-P].legend(args.labels, frameon=False,
+        #         fontsize=font - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+        # For vertical alignment
+        # for 5 protocols
         axs[-P].legend(args.labels, frameon=False,
-                fontsize=font - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+            fontsize=font - 1, bbox_to_anchor=(-0.2, -1.3), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
     # Axis properties
     for ax in axs:
         ax.label_outer()
         ax.grid(axis='x', linestyle=':', linewidth=1, color='gainsboro')
         ax.grid(axis='y', linestyle=':', linewidth=1, color='gainsboro')
-        
+
     # Figure labels
     if len(args.protocols) == 1:
+      # For horizontal alignment
+      # fig.text(0.5, 0.025, 'FPR', ha='center', fontsize=font)
+      # fig.text(-0.01, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
+      # For vertical alignment
       fig.text(0.5, 0.025, 'FPR', ha='center', fontsize=font)
       fig.text(-0.01, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
     else:
-      fig.text(0.5, 0.03, 'FPR', ha='center', fontsize=font)
-      fig.text(0.08, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
+      # For horizontal alignment
+      # fig.text(0.5, 0.03, 'FPR', ha='center', fontsize=font)
+      # fig.text(0.08, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
+      # For vertical alignment
+      fig.text(0.5, 0.05, 'FPR', ha='center', fontsize=font)
+      fig.text(0.065, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
 
-# TODO: Confindence propagation plot 
+# TODO: Confindence propagation plot
 # TODO: Second plot
 def plot_confidences(args):
 
@@ -235,7 +259,7 @@ def plot_confidences(args):
   for protocol in args.protocols:
     protocol_dir = args.output_directory/f"Protocol_{protocol}"
     for loss_function in args.loss_functions:
-      loss_dir = protocol_dir/f"{loss_function}" 
+      loss_dir = protocol_dir/f"{loss_function}"
       if os.path.exists(loss_dir):
         files = sorted(os.listdir(loss_dir))
         # get the event files
@@ -251,10 +275,12 @@ def plot_confidences(args):
   legend_pos = "lower right"
   font_size = 15
   color_palette = cm.get_cmap('tab10', 10).colors
-  # fig = pyplot.figure(figsize=(12,3*P+1))
-  # gs = fig.add_gridspec(P, 2, hspace=0.2, wspace=0.1)
-  fig = pyplot.figure(figsize=(5*P, 6))
-  gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.1)
+  # For vertical alignment
+  fig = pyplot.figure(figsize=(12,3*P+1))
+  gs = fig.add_gridspec(P, 2, hspace=0.2, wspace=0.1)
+  # For horizontal alignment
+  # fig = pyplot.figure(figsize=(5*P, 6))
+  # gs = fig.add_gridspec(2, P, hspace=0.2, wspace=0.1)
   axs = gs.subplots(sharex=True, sharey=True)
   axs = axs.flat
 
@@ -277,10 +303,12 @@ def plot_confidences(args):
   max_len = 0
   min_len = 100
   for index, protocol in enumerate(args.protocols):
-      # ax_kn = axs[2 * index]
-      # ax_unk = axs[2 * index + 1]
-      ax_kn = axs[index]
-      ax_unk = axs[index + P]
+      # for vertical alignment
+      ax_kn = axs[2 * index]
+      ax_unk = axs[2 * index + 1]
+      # for horizontal alignment
+      # ax_kn = axs[index]
+      # ax_unk = axs[index + P]
       for c, loss in enumerate(args.loss_functions):
         step_kn, val_kn, step_unk, val_unk = [[]]*4
 
@@ -304,14 +332,19 @@ def plot_confidences(args):
   # Manual legend
   # axs[-2].legend(args.labels, frameon=False,
   #               fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.1), ncol=3, handletextpad=0.5, columnspacing=1)
-  
+
   # Manual legend
-  if len(args.protocols) == 1:
+  if len(args.protocols) == 2:
     axs[-P].legend(args.labels, frameon=False,
             fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
   else:
+    # for 3 protocols
     axs[-P].legend(args.labels, frameon=False,
             fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+    # for 5 protocols
+    axs[-P].legend(args.labels, frameon=False,
+            fontsize=font_size - 1, bbox_to_anchor=(-0.2, -1.3), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
+
 
   for ax in axs:
       # set the tick parameters for the current axis handler
@@ -325,11 +358,17 @@ def plot_confidences(args):
       ax.label_outer()
   # X label
   if len(args.protocols) == 1:
-    # fig.text(0.5, 0, 'Epoch', ha='center', fontsize=font_size)
-    fig.text(0.5, 0.025, 'Epoch', ha='center', fontsize=font_size)    
-  else: 
-    # fig.text(0.5, 0.05, 'Epoch', ha='center', fontsize=font_size)
-    fig.text(0.5, 0.03, 'Epoch', ha='center', fontsize=font_size)
+    # For vertical alignment
+    fig.text(0.5, 0, 'Epoch', ha='center', fontsize=font_size)
+    # For horizontal alignment
+    # fig.text(0.5, 0.025, 'Epoch', ha='center', fontsize=font_size)
+  else:
+    # For vertical alignment
+    fig.text(0.5, 0.05, 'Epoch', ha='center', fontsize=font_size)
+    fig.text(0.065, 0.5, 'Confidence', va='center', rotation='vertical', fontsize=font_size)
+    # For horizontal alignment
+    # fig.text(0.5, 0.03, 'Epoch', ha='center', fontsize=font_size)
+    # fig.text(0.08, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
 
 
 # Softmax histogramms
@@ -375,7 +414,7 @@ def plot_softmax(args, scores):
           )
         else:
           kn_hist, kn_edges, unk_hist, unk_edges, neg_hist, neg_edges = [], [0], [], [0], [], [0]
-        
+
         # Plot histograms
         axs[index].stairs(kn_hist, kn_edges, fill=True, color=fill_kn, edgecolor=edge_kn, linewidth=1)
         axs[index].stairs(unk_hist, unk_edges, fill=True, color=fill_unk, edgecolor=edge_unk, linewidth=1)
@@ -406,7 +445,7 @@ def plot_softmax(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-      
+
     elif len(args.loss_functions) == 4:
       axs[-2].legend(['Known', 'Unknown', 'Negative'],
                     frameon=False,
@@ -416,7 +455,16 @@ def plot_softmax(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-      
+
+    elif len(args.loss_functions) == 5:
+      axs[-2].legend(['Known', 'Unknown', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(-2, -0.1),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
     else:
       axs[-2].legend(['Known', 'Unknown', 'Negative'],
                     frameon=False,
@@ -493,7 +541,7 @@ def plot_softmax_validation(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-      
+
     elif len(args.loss_functions) == 4:
       axs[-2].legend(['Known', 'Negative'],
                     frameon=False,
@@ -503,7 +551,17 @@ def plot_softmax_validation(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-      
+
+    elif len(args.loss_functions) == 5:
+      axs[-2].legend(['Known', 'Negative'],
+                    frameon=False,
+                    fontsize=font_size-1,
+                    bbox_to_anchor=(-1, -0.05),
+                    ncol=2,
+                    handletextpad=0.3,
+                    columnspacing=1,
+                    markerscale=1)
+
     else:
       axs[-2].legend(['Known', 'Negative'],
                     frameon=False,

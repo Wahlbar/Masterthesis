@@ -20,7 +20,7 @@ from loguru import logger
 from .metrics import confidence, auc_score_binary, auc_score_multiclass
 from .dataset import ImagenetDataset
 from .model import ResNet50
-from .losses import AverageMeter, BackgroundFocalLossF, BackgroundFocalLoss1, BackgroundFocalLossK, BackgroundFocalLossN, EarlyStopping, EntropicOpensetFocalLoss3, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetFocalLossNegative2, EntropicOpensetLoss, EntropicOpensetLoss1, EntropicOpensetLoss2, EntropicOpensetLoss3, EntropicOpensetLoss4, EntropicOpensetFocalLoss1, EntropicOpensetFocalLoss2, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
+from .losses import AverageMeter, BackgroundFocalLossF, BackgroundFocalLoss, BackgroundFocalLossKnown, BackgroundFocalLossNegative, EarlyStopping, EntropicOpensetFocalLoss3, EntropicOpensetFocalLossF, EntropicOpensetFocalLossNegative, EntropicOpensetFocalLossNegative2, EntropicOpensetLoss, EntropicOpensetLossBalancedNegative, EntropicOpensetLoss0_5, EntropicOpensetLoss0_1, EntropicOpensetLossBalancedComplete, EntropicOpensetFocalLossMax, EntropicOpensetFocalLossSum, EntropicOpensetFocalLossKnown, EntropicOpensetLossF
 import tqdm
 
 
@@ -156,8 +156,7 @@ def validate(model, data_loader, loss_fn, n_classes, trackers, cfg):
     # Reset all validation metrics
     for metric in trackers.values():
         metric.reset()
-
-    if cfg.loss.type in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
+    if cfg.loss.type in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "BGF"]:
         min_unk_score = 0.
         unknown_class = n_classes - 1
         last_valid_class = -1
@@ -288,7 +287,7 @@ def worker(cfg):
         )
 
         # If using garbage class, replaces label -1 to maximum label + 1
-        if cfg.loss.type in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
+        if cfg.loss.type in ["garbage", 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', "BGF"]:
             # Only change the unknown label of the training dataset
             train_ds.replace_negative_label()
             val_ds.replace_negative_label()
@@ -333,7 +332,7 @@ def worker(cfg):
     # set loss
     loss = None
 
-    if cfg.loss.type in ["softmax", "garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]:
+    if cfg.loss.type in ["softmax", "garbage", 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', "BGF"]:
         # number of classes when training with extra garbage class for unknowns, or when unknowns are removed
         n_classes = train_ds.label_count
     
@@ -341,73 +340,52 @@ def worker(cfg):
         # number of classes - 1 since we have no label for unknown
         n_classes = train_ds.label_count - 1
 
+    ''' Here I refer to my different open set weighting schemes. I refer them individually with elif statements to have a better overview, even though this could maybe done more efficient.'''
     # set weight
     if cfg.loss.type == "entropic":
         # We select entropic loss using the unknown class weights from the config file
         loss = EntropicOpensetLoss(n_classes, cfg.loss.w)
 
-    elif cfg.loss.type == "EOS1":
+    elif cfg.loss.type == "EOS BN":
         # We select entropic loss using the unknown class weights from the config file        
         class_weights = device(train_ds.calculate_class_weights())
         negative_weight = class_weights[0]
-        loss = EntropicOpensetLoss1(n_classes, neg_w=negative_weight)
+        loss = EntropicOpensetLossBalancedNegative(n_classes, neg_w=negative_weight)
     
-    elif cfg.loss.type == "EOS2":
+    elif cfg.loss.type == "EOS 0.5":
         # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLoss2(n_classes)
+        loss = EntropicOpensetLoss0_5(n_classes)
     
-    elif cfg.loss.type == "EOS3":
+    elif cfg.loss.type == "EOS 0.1":
         # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetLoss3(n_classes)
+        loss = EntropicOpensetLoss0_1(n_classes)
 
-    elif cfg.loss.type == "EOS4":
+    elif cfg.loss.type == "EOS BC":
         # We select entropic loss using the unknown class weights from the config file
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[1:]
         negative_weight = class_weights[0]
-        loss = EntropicOpensetLoss4(n_classes, kn_w=known_weights, neg_w=negative_weight)
+        loss = EntropicOpensetLossBalancedComplete(n_classes, kn_w=known_weights, neg_w=negative_weight)
+
+    elif cfg.loss.type == "EOS FM":
+        # We select entropic loss using the unknown class weights from the config file
+        loss = EntropicOpensetFocalLossMax(n_classes, gamma=1, alpha=1)
     
-    elif cfg.loss.type == "EOSF":
+    elif cfg.loss.type == "EOS FS":
         # We select entropic loss using the unknown class weights from the config file
-        class_weights = device(train_ds.calculate_class_weights())
-        known_weights = class_weights[1:]
-        negative_weight = class_weights[0]
-        loss = EntropicOpensetLossF(n_classes, kn_w=known_weights, neg_w=negative_weight)
+        loss = EntropicOpensetFocalLossSum(n_classes, gamma=1, alpha=1)
 
-    elif cfg.loss.type == "FCL1":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetFocalLoss1(n_classes, gamma=1, alpha=1)
-    
-    elif cfg.loss.type == "FCL2":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetFocalLoss2(n_classes, gamma=1, alpha=1)
-
-    elif cfg.loss.type == "FCL3":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetFocalLoss3(n_classes, gamma=1, alpha=1)
-
-    elif cfg.loss.type == "FCLF":
-        # We select entropic loss using the unknown class weights from the config file
-        loss = EntropicOpensetFocalLossF(n_classes, gamma=1, alpha=1)
-
-
-    elif cfg.loss.type == "FCLK":
+    elif cfg.loss.type == "EOS FK":
         # We select entropic loss using the unknown class weights from the config file
         class_weights = device(train_ds.calculate_class_weights())
         negative_weight = class_weights[0]
         loss = EntropicOpensetFocalLossKnown(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
     
-    elif cfg.loss.type == "FCLN":
+    elif cfg.loss.type == "EOS FN":
         # We select entropic loss using the unknown class weights from the config file
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[1:]
         loss = EntropicOpensetFocalLossNegative(n_classes, gamma=1, alpha=1, kn_w=known_weights)
-
-    elif cfg.loss.type == "FCLN2":
-        # We select entropic loss using the unknown class weights from the config file
-        class_weights = device(train_ds.calculate_class_weights())
-        known_weights = class_weights[1:]
-        loss = EntropicOpensetFocalLossNegative2(n_classes, gamma=1, alpha=1, kn_w=known_weights)
 
     elif cfg.loss.type == "softmax":
         # We need to ignore the index only for validation loss computation
@@ -418,29 +396,25 @@ def worker(cfg):
         class_weights = device(train_ds.calculate_class_weights())
         loss = torch.nn.CrossEntropyLoss(weight=class_weights)
 
-    elif cfg.loss.type == "BG1":
+    elif cfg.loss.type == "BG 1":
         # We use balanced class weights
         loss = torch.nn.CrossEntropyLoss(reduction='mean')
 
-    elif cfg.loss.type == "BG2":
+    elif cfg.loss.type == "BG F":
         # We use balanced class weights
-        loss = BackgroundFocalLoss1(n_classes, gamma=1, alpha=1)
+        loss = BackgroundFocalLoss(n_classes, gamma=1, alpha=1)
 
-    elif cfg.loss.type == "BGK":
+    elif cfg.loss.type == "BG FK":
         # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
         negative_weight = class_weights[n_classes-1]
-        loss = BackgroundFocalLossK(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
+        loss = BackgroundFocalLossKnown(n_classes, gamma=1, alpha=1, neg_w=negative_weight)
 
-    elif cfg.loss.type == "BGN":
+    elif cfg.loss.type == "BG FN":
         # We use balanced class weights
         class_weights = device(train_ds.calculate_class_weights())
         known_weights = class_weights[:(n_classes-1)]
-        loss = BackgroundFocalLossN(n_classes, gamma=1, alpha=1, kn_w=known_weights)
-
-    elif cfg.loss.type == "BGF":
-        # We use balanced class weights
-        loss = BackgroundFocalLossF(n_classes, gamma=1, alpha=1)
+        loss = BackgroundFocalLossNegative(n_classes, gamma=1, alpha=1, kn_w=known_weights)
 
     # Create the model
     model = ResNet50(fc_layer_dim=n_classes,
