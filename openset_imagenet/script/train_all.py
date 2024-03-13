@@ -36,8 +36,8 @@ def get_args():
     parser.add_argument(
       "--loss-functions", "-l",
       nargs = "+",
-      choices = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCL3', 'FCLF', 'FCLK', 'FCLN', 'softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF'),
-      default = ('entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCL3', 'FCLF', 'FCLK', 'FCLN', 'softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF'),
+      choices = ('softmax', 'garbage', 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', 'entropic', 'EOS 1', 'EOS BN', 'EOS 0.5', 'EOS 0.1', 'EOS BC', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN'),
+      default = ('softmax', 'garbage', 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', 'entropic', 'EOS 1', 'EOS BN', 'EOS 0.5', 'EOS 0.1', 'EOS BC', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN'),
       help = "Select the loss functions that should be evaluated"
       )
     parser.add_argument(

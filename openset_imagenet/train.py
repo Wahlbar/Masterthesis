@@ -156,7 +156,7 @@ def validate(model, data_loader, loss_fn, n_classes, trackers, cfg):
     # Reset all validation metrics
     for metric in trackers.values():
         metric.reset()
-    if cfg.loss.type in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "BGF"]:
+    if cfg.loss.type in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN"]:
         min_unk_score = 0.
         unknown_class = n_classes - 1
         last_valid_class = -1
@@ -287,7 +287,7 @@ def worker(cfg):
         )
 
         # If using garbage class, replaces label -1 to maximum label + 1
-        if cfg.loss.type in ["garbage", 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', "BGF"]:
+        if cfg.loss.type in ["garbage", 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN']:
             # Only change the unknown label of the training dataset
             train_ds.replace_negative_label()
             val_ds.replace_negative_label()
@@ -332,7 +332,7 @@ def worker(cfg):
     # set loss
     loss = None
 
-    if cfg.loss.type in ["softmax", "garbage", 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', "BGF"]:
+    if cfg.loss.type in ["softmax", "garbage", 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN']:
         # number of classes when training with extra garbage class for unknowns, or when unknowns are removed
         n_classes = train_ds.label_count
     

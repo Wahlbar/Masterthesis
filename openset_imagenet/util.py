@@ -175,9 +175,8 @@ def plot_oscr(arrays, methods, scale='linear', title=None, ax_label_font=13,
     color_palette = cm.get_cmap('tab10', 10).colors
 
     assert len(arrays) == len(methods)
-
     for idx, array in enumerate(arrays):
-        has_bg = methods[idx] in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]
+        has_bg = methods[idx] in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN"]
 
         if array is None:
             ccr, fpr = [], []

@@ -1,4 +1,6 @@
 """Training of all models for the paper"""
+""" I added mostly cosmetic changes to have a good position of the legend, when plotting larger sets of loss functions.
+These are all manual changes. An automation could be done for better improvements."""
 
 import argparse
 import multiprocessing
@@ -38,15 +40,15 @@ def get_args():
     parser.add_argument(
         "--loss-functions", "-l",
         nargs = "+",
-        choices = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCL3', 'FCLF', 'FCLK', 'FCLN'),
-        default = ('softmax', 'garbage', 'BG1', 'BG2', 'BGK', 'BGN', 'BGF', 'entropic', 'EOS1', 'EOS2', 'EOS3', 'EOS4', 'EOSF', 'FCL1', 'FCL2', 'FCL3', 'FCLF', 'FCLK', 'FCLN'),
+        choices = ('softmax', 'garbage', 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', 'entropic', 'EOS 1', 'EOS BN', 'EOS 0.5', 'EOS 0.1', 'EOS BC', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN'),
+        default = ('softmax', 'garbage', 'BG B', 'BG 1', 'BG F', 'BG FK', 'BG FN', 'entropic', 'EOS 1', 'EOS BN', 'EOS 0.5', 'EOS 0.1', 'EOS BC', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN'),
         help = "Select the loss functions that should be evaluated"
     )
     parser.add_argument(
         "--labels",
         nargs="+",
-        choices = ("S", "BG", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS 1", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
-        default = ("S", "BG", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "BGF", "EOS", "EOS 1", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOSF', 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN', 'FCLN'),
+        choices = ("S", "BG", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "EOS", "EOS 1", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN'),
+        default = ("S", "BG", "BG B", "BG 1", "BG F", "BG FK", "BG FN", "EOS", "EOS 1", "EOS BN", "EOS 0.5", "EOS 0.1", "EOS BC", 'EOS FM', 'EOS FS', 'EOS FK', 'EOS FN'),
         help = "Select the labels for the plots"
     )
     parser.add_argument(
@@ -111,6 +113,7 @@ def get_args():
       help = "Select where to write the tables into"
     )
 
+    # Added folder pathes to save everything in the results folder
     args = parser.parse_args()
 
     args.output_directory = Path(args.output_directory)
@@ -158,16 +161,8 @@ def load_scores(args):
           print ("Checkpoint file", checkpoint_file, "not found, skipping protocol", protocol, loss)
           scores[protocol][loss] = None
           epoch[protocol][loss] = (0, 0)
-    # for key, value in scores.items():
-    #   for key2, value2 in value.items():
-    #     for key4, value4 in value2.items():
-    #       print(f'{key4}: {value4}')
-    #       for key3, value3 in value4.items():
-    #         print(f'{key3}: {value3}')
     return scores, epoch
 
-# TODO: OSCR
-# TODO: First plot
 def plot_OSCR(args, scores):
     # plot OSCR
     P = len(args.protocols)
@@ -184,13 +179,14 @@ def plot_OSCR(args, scores):
 
     if args.sort_by_loss:
       for index, l in enumerate(args.loss_functions):
-#        val = [scores[p][l]["val"] if scores[p][l] is not None else None for p in args.protocols]
+        # For valudation set
+        # val = [scores[p][l]["val"] if scores[p][l] is not None else None for p in args.protocols]
         test = [scores[p][l]["test"] if scores[p][l] is not None else None for p in args.protocols]
         openset_imagenet.util.plot_oscr(arrays=test, methods=[l]*len(args.protocols), scale=scale, title=f'{args.labels[index]} Negative',
                       ax_label_font=font, ax=axs[index], unk_label=-1,)
         openset_imagenet.util.plot_oscr(arrays=test, methods=[l]*len(args.protocols), scale=scale, title=f'{args.labels[index]} Unknown',
                       ax_label_font=font, ax=axs[index+P], unk_label=-2,)
-      # Manual legend
+      # Manual legend for single protocol plots
       if len(args.protocols) == 1:
         axs[-P].legend([f"$P_{p}$" for p in args.protocols], frameon=False,
                 fontsize=font - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
@@ -205,14 +201,15 @@ def plot_OSCR(args, scores):
         openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Negative',
                       ax_label_font=font, ax=axs[2*index], unk_label=-1,)
         openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Unknown',
-                      ax_label_font=font, ax=axs[2*index+1], unk_label=-2,) #TODO: here aswell
+                      ax_label_font=font, ax=axs[2*index+1], unk_label=-2,)
         # for horizontal alignment
 
         # openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Negative',
         #               ax_label_font=font, ax=axs[index], unk_label=-1,)
         # openset_imagenet.util.plot_oscr(arrays=test, methods=args.loss_functions, scale=scale, title=f'$P_{p}$ Unknown',
-        #               ax_label_font=font, ax=axs[index+P], unk_label=-2,) #TODO: here aswell
-      # Manual legend
+        #               ax_label_font=font, ax=axs[index+P], unk_label=-2,)
+
+      # Manual legend for single protocols plots
       if len(args.protocols) == 1:
          axs[-P].legend(args.labels, frameon=False,
                 fontsize=font - 1, bbox_to_anchor=(0.8, -0.2), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
@@ -220,8 +217,7 @@ def plot_OSCR(args, scores):
         # For horizontal alignment
         # axs[-P].legend(args.labels, frameon=False,
         #         fontsize=font - 1, bbox_to_anchor=(0.8, -0.12), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
-        # For vertical alignment
-        # for 5 protocols
+        # For vertical alignment & 5 protocols
         axs[-P].legend(args.labels, frameon=False,
             fontsize=font - 1, bbox_to_anchor=(-0.2, -1.3), ncol=3, handletextpad=0.5, columnspacing=1, markerscale=3)
     # Axis properties
@@ -246,16 +242,10 @@ def plot_OSCR(args, scores):
       fig.text(0.5, 0.05, 'FPR', ha='center', fontsize=font)
       fig.text(0.065, 0.5, 'CCR', va='center', rotation='vertical', fontsize=font)
 
-# TODO: Confindence propagation plot
-# TODO: Second plot
 def plot_confidences(args):
 
   # locate event paths
   event_files = {p:collections.defaultdict(list) for p in args.protocols}
-
-  # print(args.protocols)
-  # for l in args.loss_functions:
-  #   print(l)
   for protocol in args.protocols:
     protocol_dir = args.output_directory/f"Protocol_{protocol}"
     for loss_function in args.loss_functions:
@@ -269,7 +259,6 @@ def plot_confidences(args):
               loss = f.split("-")[1].split(".")[0]
               # set (overwrite) event file
               event_files[protocol][loss].append(loss_dir / f)
-  # print(event_files)
   P = len(args.protocols)
   linewidth = 1.5
   legend_pos = "lower right"
@@ -329,7 +318,7 @@ def plot_confidences(args):
       ax_kn.set_title(f"$P_{protocol}$ Known", fontsize=font_size)
       ax_unk.set_title(f"$P_{protocol}$ Negative", fontsize=font_size)
 
-  # Manual legend
+  # Manual legend for horizontal alignment
   # axs[-2].legend(args.labels, frameon=False,
   #               fontsize=font_size - 1, bbox_to_anchor=(0.8, -0.1), ncol=3, handletextpad=0.5, columnspacing=1)
 
@@ -372,7 +361,6 @@ def plot_confidences(args):
 
 
 # Softmax histogramms
-# TODO: Third plot
 def plot_softmax(args, scores):
 
     font_size = 15
@@ -396,7 +384,7 @@ def plot_softmax(args, scores):
     for protocol in args.protocols:
       for l, loss in enumerate(args.loss_functions):
         # Calculate histogram
-        drop_bg = loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]  #  Drop the background class
+        drop_bg = loss in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN"]  #  Drop the background class
         if scores[protocol][loss] is not None:
           kn_hist, kn_edges, unk_hist, unk_edges = openset_imagenet.util.get_histogram(
               scores[protocol][loss]["test"],
@@ -435,7 +423,8 @@ def plot_softmax(args, scores):
         ax.yaxis.set_major_locator(MaxNLocator(6))
         ax.label_outer()
 
-    # Manual legend
+    # Manual legend 
+    # For one protocol
     if len(args.protocols) == 1:
       axs[-2].legend(['Known', 'Unknown', 'Negative'],
                     frameon=False,
@@ -445,7 +434,7 @@ def plot_softmax(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-
+    # For four protocols
     elif len(args.loss_functions) == 4:
       axs[-2].legend(['Known', 'Unknown', 'Negative'],
                     frameon=False,
@@ -455,7 +444,7 @@ def plot_softmax(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-
+    # For five protocols
     elif len(args.loss_functions) == 5:
       axs[-2].legend(['Known', 'Unknown', 'Negative'],
                     frameon=False,
@@ -478,6 +467,7 @@ def plot_softmax(args, scores):
     fig.text(0.5, 0.02, 'Test Set', ha='center', fontsize=font_size)
 
 # Softmax histogramms
+# Added to also plot the validation set histogrm. Can be ignored.
 def plot_softmax_validation(args, scores):
 
     font_size = 15
@@ -499,7 +489,7 @@ def plot_softmax_validation(args, scores):
     for protocol in args.protocols:
       for l, loss in enumerate(args.loss_functions):
         # Calculate histogram
-        drop_bg = loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"]  #  Drop the background class
+        drop_bg = loss in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN"]  #  Drop the background class
         if scores[protocol][loss] is not None:
           kn_hist_val, kn_edges_val, neg_hist_val, neg_edges_val = openset_imagenet.util.get_histogram(
               scores[protocol][loss]["val"],
@@ -532,6 +522,7 @@ def plot_softmax_validation(args, scores):
         ax.label_outer()
 
     # Manual legend
+    # For one protocol
     if len(args.protocols) == 1:
       axs[-2].legend(['Known', 'Negative'],
                     frameon=False,
@@ -541,7 +532,7 @@ def plot_softmax_validation(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-
+    # For four protocols
     elif len(args.loss_functions) == 4:
       axs[-2].legend(['Known', 'Negative'],
                     frameon=False,
@@ -551,7 +542,7 @@ def plot_softmax_validation(args, scores):
                     handletextpad=0.3,
                     columnspacing=1,
                     markerscale=1)
-
+    # For five protocols
     elif len(args.loss_functions) == 5:
       axs[-2].legend(['Known', 'Negative'],
                     frameon=False,
@@ -598,8 +589,8 @@ def conf_and_ccr_table(args, scores, epochs):
           ccr_, fpr_ = openset_imagenet.util.calculate_oscr(gt, values, unk_label=unk_label)
 
           # get confidences on test set
-          offset = 0 if loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"] else 1 / (numpy.max(gt)+1)
-          last_valid_class = -1 if loss in ["garbage", "BG1", "BG2", "BGK", "BGN", "BGF"] else None
+          offset = 0 if loss in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN"] else 1 / (numpy.max(gt)+1)
+          last_valid_class = -1 if loss in ["garbage", "BG B", "BG 1", "BG F", "BG FK", "BG FN"] else None
           c = openset_imagenet.metrics.confidence(
               torch.tensor(values),
               torch.tensor(gt, dtype=torch.long),
